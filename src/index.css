@@ -4,67 +4,227 @@
 
 @layer base {
   body {
-    background-color: #F4F9F9;
-    color: #0F172A;
-    font-family: 'Inter', sans-serif;
+    background-color: #fafafa;
+    color: #171717;
+    font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Geist', 'Inter', sans-serif;
+    color: #171717;
+    font-weight: 600;
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Minimalist Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #E8F4F5;
+  background: #fafafa;
 }
 ::-webkit-scrollbar-thumb {
-  background: #A6CFD5;
-  border-radius: 4px;
+  background: #ebebeb;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #7CB8C1;
+  background: #d4d4d4;
 }
 
-/* Glassmorphism utilities for Light White & #A6CFD5 Theme */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(166, 207, 213, 0.45);
-  box-shadow: 0 4px 20px -2px rgba(166, 207, 213, 0.25), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+/* Geist Typography Utilities */
+.display-xl {
+  font-family: 'Geist', sans-serif;
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 48px;
+  letter-spacing: -2.4px;
 }
 
-.glass-panel-hover {
-  transition: all 0.25s ease-in-out;
-}
-.glass-panel-hover:hover {
-  background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(166, 207, 213, 0.85);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px -5px rgba(166, 207, 213, 0.45), 0 4px 12px -2px rgba(0, 0, 0, 0.06);
+.heading-lg {
+  font-family: 'Geist', sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 40px;
+  letter-spacing: -1.28px;
 }
 
-/* Animations */
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+.heading-md {
+  font-family: 'Geist', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  letter-spacing: -0.4px;
 }
 
-.animate-pulse-subtle {
-  animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.label-sm {
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+}
+
+.mono-eyebrow {
+  font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.body-lg {
+  font-family: 'Geist', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #4d4d4d;
+}
+
+.body-md {
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  color: #4d4d4d;
+}
+
+.body-sm {
+  font-family: 'Geist', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  color: #8f8f8f;
+}
+
+/* Vercel Hero Multi-Stop Mesh Gradient */
+.geist-hero-mesh {
+  background-color: #fafafa;
+  background-image: 
+    radial-gradient(at 15% 20%, rgba(80, 227, 194, 0.28) 0px, transparent 55%),
+    radial-gradient(at 85% 15%, rgba(0, 124, 240, 0.25) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(121, 40, 202, 0.18) 0px, transparent 60%),
+    radial-gradient(at 80% 85%, rgba(235, 54, 127, 0.20) 0px, transparent 55%),
+    radial-gradient(at 20% 80%, rgba(249, 203, 40, 0.22) 0px, transparent 50%);
+}
+
+.geist-hero-glow {
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(0, 112, 243, 0.18) 0%, rgba(121, 40, 202, 0.14) 35%, rgba(255, 0, 128, 0.10) 65%, rgba(249, 203, 40, 0.06) 80%, transparent 100%);
+  filter: blur(70px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Hairline Card Utilities */
+.geist-card {
+  background: #ffffff;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.geist-card-hover {
+  transition: all 0.2s ease;
+}
+.geist-card-hover:hover {
+  border-color: #d4d4d4;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.06);
+}
+
+.geist-card-elevated {
+  background: #ffffff;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+}
+
+/* Button Presets */
+.btn-marketing-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #171717;
+  color: #ffffff;
+  border-radius: 100px;
+  font-weight: 500;
+  font-size: 15px;
+  height: 42px;
+  padding: 0 20px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.btn-marketing-primary:hover {
+  background-color: #2e2e2e;
+  transform: translateY(-0.5px);
+}
+
+.btn-marketing-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  color: #171717;
+  border: 1px solid #ebebeb;
+  border-radius: 100px;
+  font-weight: 500;
+  font-size: 15px;
+  height: 42px;
+  padding: 0 20px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.btn-marketing-secondary:hover {
+  background-color: #fafafa;
+  border-color: #d4d4d4;
+}
+
+.btn-app-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  height: 32px;
+  padding: 0 12px;
+  transition: all 0.15s ease;
+}
+
+.btn-app-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  color: #171717;
+  border: 1px solid #ebebeb;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  height: 32px;
+  padding: 0 12px;
+  transition: all 0.15s ease;
+}
+.btn-app-ghost:hover {
+  background-color: #fafafa;
+  border-color: #d4d4d4;
 }
 
 /* GPU Accelerated Map State Path Transitions */
 .map-state-path {
   transform-box: fill-box;
   transform-origin: center;
-  transition: fill 180ms ease-out, opacity 180ms ease-out, transform 180ms ease-out, filter 180ms ease-out, stroke 180ms ease-out, stroke-width 180ms ease-out;
+  transition: fill 180ms ease-out, opacity 180ms ease-out, stroke 180ms ease-out, stroke-width 180ms ease-out;
 }
 
 /* Subtle Risk Pulse Ring for High-Risk States */
@@ -90,36 +250,6 @@
   animation: riskPulseRing 2.4s cubic-bezier(0, 0.2, 0.8, 1) infinite;
 }
 
-/* Click Ripple Effect */
-@keyframes mapClickRipple {
-  0% {
-    r: 4px;
-    opacity: 0.9;
-    stroke-width: 3px;
-  }
-  100% {
-    r: 70px;
-    opacity: 0;
-    stroke-width: 1px;
-  }
-}
-
-.animate-map-ripple {
-  animation: mapClickRipple 0.5s ease-out forwards;
-}
-
-/* Respect Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  .map-state-path,
-  .animate-risk-pulse,
-  .animate-map-ripple {
-    animation: none !important;
-    transition: fill 100ms ease, opacity 100ms ease !important;
-    transform: none !important;
-    filter: none !important;
-  }
-}
-
 /* Print layout for Downloadable Reports */
 @media print {
   body {
@@ -132,11 +262,12 @@
   .print-only {
     display: block !important;
   }
-  .glass-panel {
+  .geist-card {
     background: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
-    color: #0f172a !important;
+    border: 1px solid #ebebeb !important;
+    color: #171717 !important;
     box-shadow: none !important;
   }
 }
+
 

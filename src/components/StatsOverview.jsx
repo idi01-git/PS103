@@ -252,31 +252,28 @@ export default function StatsOverview({ stats, onFilterClick }) {
     <div className="space-y-0 select-none">
       
       {/* SECTION A: Minimal Premium Editorial Overview */}
-      <section className="pt-36 sm:pt-48 pb-16 sm:pb-24 my-2 bg-white border-b border-slate-100">
+      <section className="pt-20 sm:pt-28 pb-16 sm:pb-20 bg-white border-b border-[#ebebeb]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           
-          {/* 1. Header Group: DRISHTI + Balanced Full Form */}
-          <div className="mb-2 sm:mb-2.5">
-            <span className="block text-xs sm:text-sm font-bold tracking-[6px] uppercase text-[#444444] font-sans">
-              DRISHTI
+          {/* 1. Header Group: Geist Mono Eyebrow */}
+          <div className="mb-4">
+            <span className="mono-eyebrow text-[#8f8f8f] block mb-2">
+              DRISHTI // PAIMANA INFRASTRUCTURE INTELLIGENCE
             </span>
-            <span className="block text-[8.5px] sm:text-[9.5px] font-semibold tracking-[2px] uppercase text-slate-400/90 font-sans pt-1.5 sm:pt-2 max-w-3xl mx-auto">
-              Data-driven Risk Intelligence &amp; Systemic Health Tracking for Infrastructure
+            <span className="inline-block text-[11px] font-mono font-medium text-[#4d4d4d] px-3 py-1 bg-[#f2f2f2] border border-[#ebebeb] rounded-[6px]">
+              DATA-DRIVEN RISK INTELLIGENCE &amp; SYSTEMIC HEALTH TRACKING
             </span>
           </div>
 
-          {/* 2. Main Heading (Single Line on Desktop/Tablet) */}
-          <h2 className="text-[26px] sm:text-[38px] md:text-[44px] lg:text-[48px] font-extrabold leading-tight tracking-tight text-[#111111] font-sans max-w-none mx-auto whitespace-normal sm:whitespace-nowrap text-center mb-6 sm:mb-8">
-            Built for Smarter Monitoring
+          {/* 2. Main Heading (Tight Negative Tracking) */}
+          <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-semibold tracking-[-1.8px] leading-tight text-[#171717] mb-5">
+            Built for Smarter Infrastructure Governance
           </h2>
 
-          {/* 3. Description (Aligned Center with 3-Line Continuation) */}
-          <p className="text-[18px] sm:text-[22px] lg:text-[24px] font-medium leading-relaxed text-[#444444] max-w-4xl mx-auto text-center font-sans">
+          {/* 3. Description */}
+          <p className="text-base sm:text-xl font-normal leading-relaxed text-[#4d4d4d] max-w-3xl mx-auto">
             Track project progress, uncover emerging risks, and understand
-            <br className="hidden sm:block" />
-            {' '}what needs attention before small issues
-            <br className="hidden sm:block" />
-            {' '}become major delays.
+            what needs attention before administrative delays become major capital overruns.
           </p>
         </div>
       </section>
@@ -291,29 +288,30 @@ export default function StatsOverview({ stats, onFilterClick }) {
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUpOrLeave}
         onMouseLeave={handleMouseUpOrLeave}
-        className="py-8 sm:py-10 bg-gradient-to-r from-[#D6F0FA] via-[#EBF7FD] to-[#CDECF9] border-b border-[#A6CFD5]/50 relative overflow-hidden cursor-grab active:cursor-grabbing"
+        className="py-12 sm:py-16 bg-[#fafafa] border-b border-[#ebebeb] relative overflow-hidden cursor-grab active:cursor-grabbing"
       >
-        
-        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(#0A434B_1px,transparent_1px)] [background-size:24px_24px]"></div>
-
         <div className="max-w-7xl mx-auto relative z-10">
           
-          {/* Header Row (Arrow Buttons Removed as requested) */}
-          <div className="flex items-center justify-center mb-6 px-4 text-center">
+          {/* Header Row */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 px-4 sm:px-6 gap-3">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-[#0E2F56] tracking-tight">
+              <div className="mono-eyebrow text-[#8f8f8f] mb-1">
+                CENTRAL SECTOR // MEGA INVESTMENTS &gt; ₹4,000 CR
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-[#171717] tracking-[-1.28px]">
                 High Value Projects
               </h2>
-              <p className="text-xs text-slate-500 mt-1 font-medium">
-                Move mouse pointer left/right to fluidly slide project cards
-              </p>
             </div>
+            <p className="text-xs text-[#8f8f8f] font-mono flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#0070f3]" />
+              Glide cursor horizontally to scroll portfolio
+            </p>
           </div>
 
-          {/* High Value Projects Smooth Mouse Motion Slider */}
+          {/* High Value Projects Slider */}
           <div 
             ref={carouselRef}
-            className="flex gap-6 overflow-x-auto scrollbar-none pb-6 pt-2 px-6 sm:px-12 md:px-24"
+            className="flex gap-5 overflow-x-auto scrollbar-none pb-6 pt-2 px-4 sm:px-6 lg:px-8"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {highValueProjects.map((card) => {
@@ -325,72 +323,76 @@ export default function StatsOverview({ stats, onFilterClick }) {
                     e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                     if (onFilterClick) onFilterClick(card.filterStatus);
                   }}
-                  className="w-[270px] sm:w-[305px] flex-shrink-0 bg-white rounded-2xl border border-slate-100 shadow-xl p-5 sm:p-6 flex flex-col justify-between text-center transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer group"
+                  className="w-[280px] sm:w-[310px] flex-shrink-0 bg-white rounded-[12px] border border-[#ebebeb] shadow-whisper p-5 flex flex-col justify-between text-center transition-all duration-200 hover:border-[#d4d4d4] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 cursor-pointer group"
                 >
-                  {/* Top Sector Icon */}
-                  <div className="mb-3 text-slate-900 transition-transform group-hover:scale-110 duration-300">
-                    <IconComp />
+                  {/* Top Sector Icon & Tag */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="mono-eyebrow text-[10px] text-[#8f8f8f] px-2 py-0.5 rounded-[4px] bg-[#f2f2f2] border border-[#ebebeb]">
+                        {card.filterStatus}
+                      </span>
+                      <span className="text-[10px] font-mono text-[#0070f3] font-medium">
+                        {card.latestRevisedDate}
+                      </span>
+                    </div>
+
+                    <div className="mb-3 text-[#171717] transition-transform group-hover:scale-105 duration-200">
+                      <IconComp />
+                    </div>
+
+                    {/* Sector Title */}
+                    <h3 className="text-base font-semibold text-[#171717] tracking-tight mb-1 min-h-[24px]">
+                      {card.sector}
+                    </h3>
+
+                    {/* Authority / Org */}
+                    <p className="text-xs text-[#4d4d4d] leading-snug min-h-[34px] px-1 flex items-center justify-center font-normal">
+                      {card.authority}
+                    </p>
+
+                    {/* Project Title */}
+                    <p className="text-[11px] text-[#8f8f8f] font-mono truncate mt-1 px-1 min-h-[18px]">
+                      {card.projectName}
+                    </p>
                   </div>
 
-                  {/* Sector Title */}
-                  <h3 className="text-base font-extrabold text-[#112D4E] tracking-tight mb-1.5 min-h-[24px]">
-                    {card.sector}
-                  </h3>
-
-                  {/* Authority / Org */}
-                  <p className="text-xs font-bold text-slate-500 leading-snug min-h-[34px] px-1 flex items-center justify-center">
-                    {card.authority}
-                  </p>
-
-                  {/* Project Title */}
-                  <p className="text-[11px] text-slate-400 font-medium truncate mt-1 px-1 min-h-[18px]">
-                    {card.projectName}
-                  </p>
-
-                  {/* Horizontal Divider Line */}
-                  <div className="w-full border-b border-slate-200 my-3"></div>
-
-                  {/* 2x2 Metric Table Grid */}
-                  <div className="relative grid grid-cols-2 text-left pt-0.5">
+                  {/* 2x2 Metric Table Grid with Clean Hairline Cross */}
+                  <div className="relative grid grid-cols-2 text-left pt-3 mt-3 border-t border-[#ebebeb]">
                     
                     {/* Vertical Dividing Line */}
-                    <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-slate-200 -translate-x-1/2"></div>
+                    <div className="absolute left-1/2 top-3 bottom-0 w-[1px] bg-[#ebebeb] -translate-x-1/2"></div>
                     
                     {/* Horizontal Dividing Line */}
-                    <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-slate-200 -translate-y-1/2"></div>
+                    <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-[#ebebeb] -translate-y-1/2"></div>
 
                     {/* Top Left: Original Cost */}
                     <div className="pr-2.5 pb-2.5">
-                      <span className="text-[11px] text-slate-500 font-medium leading-tight block">Original Cost</span>
-                      <span className="text-[10px] text-slate-400 font-medium block mb-0.5">(in Cr)</span>
-                      <span className="text-xs sm:text-sm font-extrabold text-slate-900 font-heading">
-                        ₹ {card.originalCost}
+                      <span className="text-[10px] font-mono text-[#8f8f8f] block uppercase">Original</span>
+                      <span className="text-xs sm:text-sm font-semibold text-[#171717] font-mono">
+                        ₹{card.originalCost} Cr
                       </span>
                     </div>
 
                     {/* Top Right: Physical Progress */}
                     <div className="pl-2.5 pb-2.5">
-                      <span className="text-[11px] text-slate-500 font-medium leading-tight block">Physical Progress</span>
-                      <span className="text-[10px] text-slate-400 font-medium block mb-0.5">(in %)</span>
-                      <span className="text-xs sm:text-sm font-extrabold text-slate-900 font-heading">
-                        {card.physicalProgress}
+                      <span className="text-[10px] font-mono text-[#8f8f8f] block uppercase">Progress</span>
+                      <span className="text-xs sm:text-sm font-semibold text-[#0070f3] font-mono">
+                        {card.physicalProgress}%
                       </span>
                     </div>
 
                     {/* Bottom Left: Latest Revised Cost */}
                     <div className="pr-2.5 pt-2.5">
-                      <span className="text-[11px] text-slate-500 font-medium leading-tight block">Latest Revised Cost</span>
-                      <span className="text-[10px] text-slate-400 font-medium block mb-0.5">(in Cr)</span>
-                      <span className="text-xs sm:text-sm font-extrabold text-slate-900 font-heading">
-                        ₹ {card.latestRevisedCost}
+                      <span className="text-[10px] font-mono text-[#8f8f8f] block uppercase">Revised</span>
+                      <span className="text-xs sm:text-sm font-semibold text-[#171717] font-mono">
+                        ₹{card.latestRevisedCost} Cr
                       </span>
                     </div>
 
                     {/* Bottom Right: Latest Revised Comp. Date */}
                     <div className="pl-2.5 pt-2.5">
-                      <span className="text-[11px] text-slate-500 font-medium leading-tight block">Latest Revised</span>
-                      <span className="text-[10px] text-slate-400 font-medium block mb-0.5">Comp. Date</span>
-                      <span className="text-[11px] sm:text-xs font-extrabold text-slate-900 font-heading">
+                      <span className="text-[10px] font-mono text-[#8f8f8f] block uppercase">Target</span>
+                      <span className="text-[11px] sm:text-xs font-semibold text-[#171717] font-mono">
                         {card.latestRevisedDate}
                       </span>
                     </div>

@@ -7,36 +7,61 @@ export default {
   theme: {
     extend: {
       colors: {
-        ice: {
-          50: '#F4F9F9',
-          100: '#E8F4F5',
-          200: '#D1E8EA',
-          300: '#BBDCDC',
-          400: '#A6CFD5', // User requested highlight color
-          500: '#7CB8C1',
-          600: '#4F9AA5',
-          700: '#2E7782',
-          800: '#145C66',
-          900: '#0A434B',
-          950: '#052A30'
-        },
-        gov: {
-          dark: '#0A1428',
-          card: '#FFFFFF',
-          border: '#A6CFD5',
-          primary: '#145C66',
-          accent: '#EA580C', // subtle saffron
-          green: '#059669', // subtle green
-          gold: '#D97706',
-          red: '#DC2626',
-        }
+        primary: "#171717",
+        "on-primary": "#ffffff",
+        ink: "#171717",
+        body: "#4d4d4d",
+        mute: "#8f8f8f",
+        faint: "#a1a1a1",
+        hairline: "#ebebeb",
+        "hairline-soft": "#f2f2f2",
+        canvas: "#fafafa",
+        "canvas-elevated": "#ffffff",
+        link: "#0070f3",
+        "link-deep": "#0761d1",
+        "link-soft": "#d3e5ff",
+        error: "#ee0000",
+        "error-deep": "#c50000",
+        warning: "#f5a623",
+        "warning-soft": "#ffefcf",
+        "warning-deep": "#ab570a",
+        violet: "#7928ca",
+        "violet-soft": "#d8ccf1",
+        cyan: "#50e3c2",
+        "cyan-soft": "#aaffec",
+        pink: "#ff0080",
+        magenta: "#eb367f",
+        "gradient-develop-start": "#007cf0",
+        "gradient-develop-end": "#00dfd8",
+        "gradient-preview-start": "#7928ca",
+        "gradient-preview-end": "#ff0080",
+        "gradient-ship-start": "#ff4d4d",
+        "gradient-ship-end": "#f9cb28",
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        heading: ['Outfit', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['Geist', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        heading: ['Geist', 'Inter', '-apple-system', 'sans-serif'],
+        mono: ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
+      borderRadius: {
+        sm: '6px',
+        md: '12px',
+        lg: '16px',
+        'pill-category': '64px',
+        pill: '100px',
+      },
+      letterSpacing: {
+        'display-xl': '-2.4px',
+        'heading-lg': '-1.28px',
+        'heading-md': '-0.4px',
+        'label-sm': '-0.28px',
+      },
+      boxShadow: {
+        'whisper': '0 1px 2px rgba(0, 0, 0, 0.04)',
+        'floating': '0 2px 4px rgba(0, 0, 0, 0.02), 0 8px 16px -4px rgba(0, 0, 0, 0.08)',
       }
     },
   },
   plugins: [],
 }
+

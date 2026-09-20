@@ -30,7 +30,7 @@ export default function Navbar({ activeTab, setActiveTab, onSearch, selectedStat
   ];
 
   return (
-    <header className="sticky top-0 z-50 glass-panel border-b border-[#A6CFD5]/60 bg-white/90 backdrop-blur-md shadow-sm">
+    <header className="sticky top-0 z-50 bg-[#fafafa]/90 backdrop-blur-md border-b border-[#ebebeb] transition-all">
       {/* Main Navigation Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
@@ -40,24 +40,35 @@ export default function Navbar({ activeTab, setActiveTab, onSearch, selectedStat
             onClick={() => setActiveTab('dashboard')} 
             className="flex items-center gap-3 cursor-pointer group select-none"
           >
-            <div className="relative flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-[#145C66] via-[#1E7D8A] to-[#0A434B] border border-[#A6CFD5] shadow-md shadow-[#A6CFD5]/30 group-hover:scale-105 transition-all">
-              <span className="text-xl font-bold font-heading text-white tracking-wider">दृ</span>
+            {/* Vercel-style stark black geometric triangle mark */}
+            <div className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-[#171717] text-white transition-transform group-hover:scale-105">
+              <svg className="w-4 h-4 text-white fill-current" viewBox="0 0 24 24">
+                <path d="M12 2L24 22H0L12 2Z" />
+              </svg>
             </div>
-            <span className="font-heading font-extrabold text-2xl tracking-tight text-slate-900 group-hover:text-[#145C66] transition-colors">
-              DRISHTI
-            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="font-semibold text-lg tracking-[-0.6px] text-[#171717]">
+                DRISHTI
+              </span>
+              <span className="hidden sm:inline-block font-mono text-[11px] font-medium text-[#8f8f8f] uppercase tracking-wider">
+                PAIMANA v2.0
+              </span>
+            </div>
           </div>
 
-          {/* Quick Search */}
+          {/* Quick Search Field (6px square, hairline border, Geist spec) */}
           <form onSubmit={handleSearchSubmit} className="hidden md:flex flex-1 max-w-xs relative">
             <input
               type="text"
-              placeholder="Search project, state, ministry..."
+              placeholder="Search projects, state, ministry..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white text-sm text-slate-800 placeholder-slate-400 rounded-lg pl-9 pr-3 py-1.5 border border-[#A6CFD5] focus:outline-none focus:border-[#145C66] focus:ring-1 focus:ring-[#145C66] transition-all shadow-inner"
+              className="w-full bg-white text-sm text-[#171717] placeholder-[#8f8f8f] rounded-[6px] pl-9 pr-8 py-1.5 border border-[#ebebeb] focus:outline-none focus:border-[#171717] focus:ring-1 focus:ring-[#171717] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
             />
-            <Search className="w-4 h-4 text-[#145C66] absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-[#8f8f8f] absolute left-2.5 top-2.5" />
+            <kbd className="hidden sm:inline-flex items-center absolute right-2 top-2 px-1.5 py-0.5 text-[10px] font-mono text-[#8f8f8f] bg-[#f2f2f2] border border-[#ebebeb] rounded-[4px]">
+              /
+            </kbd>
           </form>
 
           {/* Desktop Nav Items */}
@@ -69,16 +80,18 @@ export default function Navbar({ activeTab, setActiveTab, onSearch, selectedStat
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all relative ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-sm font-medium transition-all ${
                     isActive 
-                      ? 'bg-[#A6CFD5]/35 text-[#0A434B] border border-[#A6CFD5] shadow-sm font-semibold' 
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#E8F4F5]'
+                      ? 'bg-[#171717] text-white shadow-xs' 
+                      : 'text-[#4d4d4d] hover:text-[#171717] hover:bg-[#f2f2f2]'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#145C66]' : 'text-slate-400'}`} />
-                  {item.label}
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#8f8f8f]'}`} />
+                  <span>{item.label}</span>
                   {item.badge && (
-                    <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded border border-amber-300 max-w-[80px] truncate font-mono">
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
+                      isActive ? 'bg-[#333333] text-white' : 'bg-[#ebebeb] text-[#171717]'
+                    }`}>
                       {item.badge}
                     </span>
                   )}
@@ -89,24 +102,40 @@ export default function Navbar({ activeTab, setActiveTab, onSearch, selectedStat
 
           {/* State Filter Indicator Pill (if state filter active) */}
           {selectedState && (
-            <div className="hidden sm:flex items-center gap-2 bg-amber-50 border border-amber-300 text-amber-900 px-2.5 py-1 rounded-full text-xs font-medium">
-              <MapPin className="w-3.5 h-3.5 text-amber-600" />
-              <span>State: <strong>{selectedState}</strong></span>
+            <div className="hidden sm:flex items-center gap-1.5 bg-[#ffffff] border border-[#ebebeb] text-[#171717] px-2.5 py-1 rounded-[100px] text-xs shadow-whisper">
+              <MapPin className="w-3 h-3 text-[#0070f3]" />
+              <span className="font-mono text-[11px]">State: <strong>{selectedState}</strong></span>
               <button 
                 onClick={resetStateFilter} 
-                className="hover:text-amber-950 bg-amber-200/60 rounded-full p-0.5"
+                className="hover:text-black hover:bg-[#f2f2f2] rounded-full p-0.5 ml-1 transition-colors"
                 title="Clear State Filter"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3 h-3 text-[#8f8f8f]" />
               </button>
             </div>
           )}
+
+          {/* Right Action Chrome: 6px square buttons per Geist nav spec */}
+          <div className="hidden sm:flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('reports')}
+              className="btn-app-ghost text-xs font-medium"
+            >
+              Export Data
+            </button>
+            <button
+              onClick={() => setActiveTab('projects')}
+              className="btn-app-sm bg-[#171717] hover:bg-[#333333] text-white text-xs font-medium"
+            >
+              Explore
+            </button>
+          </div>
 
           {/* Mobile Menu Button */}
           <div className="lg:hidden flex items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg bg-white border border-[#A6CFD5] text-slate-700 hover:text-slate-900"
+              className="p-1.5 rounded-[6px] bg-white border border-[#ebebeb] text-[#171717] hover:bg-[#f2f2f2]"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -116,16 +145,16 @@ export default function Navbar({ activeTab, setActiveTab, onSearch, selectedStat
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-[#A6CFD5]/60 bg-white px-4 pt-3 pb-6 space-y-3">
+        <div className="lg:hidden border-t border-[#ebebeb] bg-[#fafafa] px-4 pt-3 pb-6 space-y-3">
           <form onSubmit={handleSearchSubmit} className="relative">
             <input
               type="text"
               placeholder="Search projects..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 text-sm text-slate-800 placeholder-slate-400 rounded-lg pl-9 pr-3 py-2 border border-[#A6CFD5] focus:outline-none focus:border-[#145C66]"
+              className="w-full bg-white text-sm text-[#171717] placeholder-[#8f8f8f] rounded-[6px] pl-9 pr-3 py-2 border border-[#ebebeb] focus:outline-none focus:border-[#171717]"
             />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <Search className="w-4 h-4 text-[#8f8f8f] absolute left-3 top-3" />
           </form>
 
           <div className="space-y-1">
@@ -139,14 +168,14 @@ export default function Navbar({ activeTab, setActiveTab, onSearch, selectedStat
                     setActiveTab(item.id);
                     setMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[6px] text-sm font-medium transition-all ${
                     isActive 
-                      ? 'bg-[#A6CFD5]/35 text-[#0A434B] border border-[#A6CFD5] font-semibold' 
-                      : 'text-slate-700 hover:bg-[#E8F4F5]'
+                      ? 'bg-[#171717] text-white' 
+                      : 'text-[#4d4d4d] hover:bg-[#f2f2f2] hover:text-[#171717]'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#145C66]' : 'text-slate-400'}`} />
-                  {item.label}
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#8f8f8f]'}`} />
+                  <span>{item.label}</span>
                 </button>
               );
             })}
@@ -156,3 +185,4 @@ export default function Navbar({ activeTab, setActiveTab, onSearch, selectedStat
     </header>
   );
 }
+

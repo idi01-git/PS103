@@ -66,7 +66,7 @@ export default function App() {
   }, [selectedProjectId]);
 
   return (
-    <div className="min-h-screen bg-[#F4F9F9] text-slate-800 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#fafafa] text-[#171717] flex flex-col font-sans selection:bg-[#171717] selection:text-white">
       
       {/* Navigation Header */}
       <Navbar

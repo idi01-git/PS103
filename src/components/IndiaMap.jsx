@@ -132,7 +132,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
       .map(s => s.stateName);
   }, [stateAggregates]);
 
-  // Color Scale Generator for Choropleth Heatmap (Blue Shades Palette)
+  // Color Scale Generator for Choropleth Heatmap (Vercel Geist Blue-to-Ink Palette)
   const colorScale = useMemo(() => {
     const values = Object.values(stateAggregates).map(s => s[selectedMetric] || 0);
     const minVal = d3.min(values) || 0;
@@ -146,7 +146,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
         minVal + (maxVal - minVal) * 0.75,
         maxVal
       ])
-      .range(['#BAE6FD', '#60A5FA', '#2563EB', '#1D4ED8', '#03045E']);
+      .range(['#d3e5ff', '#70aeff', '#0070f3', '#0761d1', '#171717']);
   }, [stateAggregates, selectedMetric]);
 
   // Responsive Canvas Resize Observer
@@ -360,34 +360,34 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
   };
 
   return (
-    <section id="india-map-section" className="py-10 bg-white/60 border-b border-[#A6CFD5]/50 select-none">
+    <section id="india-map-section" className="py-14 sm:py-20 bg-[#fafafa] border-b border-[#ebebeb] select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header & Metric Switches */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-mono text-amber-900 bg-amber-100 px-2.5 py-1 rounded border border-amber-300 mb-2 font-bold shadow-xs">
-              <MapPin className="w-3.5 h-3.5 text-amber-600" />
-              INTERACTIVE CHOROPLETH HEATMAP & SPATIAL INTEL
+            <div className="inline-flex items-center gap-2 mono-eyebrow text-[#8f8f8f] mb-2">
+              <MapPin className="w-3.5 h-3.5 text-[#0070f3]" />
+              <span>SPATIAL SURVEILLANCE // NATIONAL CHOROPLETH</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-semibold text-[#171717] tracking-[-1.28px]">
               Interactive India Project Map
             </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              Hover over any state to zoom in & inspect details. Click to open state project portfolio. Pointer leave automatically zooms out.
+            <p className="text-sm text-[#4d4d4d] mt-1 font-normal">
+              Hover over any state to zoom in &amp; inspect telemetry. Click to open state project portfolio.
             </p>
           </div>
 
-          {/* Metric Selector Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-xl bg-[#E8F4F5] border border-[#A6CFD5] shadow-xs">
+          {/* Metric Selector Tabs (6px square Geist app buttons) */}
+          <div className="flex flex-wrap items-center gap-1 p-1 rounded-[6px] bg-[#f2f2f2] border border-[#ebebeb]">
             {Object.keys(metricLabels).map(mKey => (
               <button
                 key={mKey}
                 onClick={() => setSelectedMetric(mKey)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3 py-1 rounded-[4px] text-xs font-medium transition-all cursor-pointer ${
                   selectedMetric === mKey
-                    ? 'bg-[#145C66] text-white shadow-sm scale-105'
-                    : 'text-slate-700 hover:text-slate-900 hover:bg-[#A6CFD5]/40'
+                    ? 'bg-[#171717] text-white shadow-xs'
+                    : 'text-[#4d4d4d] hover:text-[#171717] hover:bg-[#ebebeb]'
                 }`}
               >
                 {metricLabels[mKey]}
@@ -402,7 +402,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
           {/* LEFT COLUMN: SVG Map Canvas & Floating Info Card */}
           <div 
             ref={containerRef} 
-            className="lg:col-span-8 rounded-3xl glass-panel p-4 border border-[#A6CFD5] relative min-h-[520px] flex items-center justify-center overflow-hidden bg-white shadow-md outline-none focus:outline-none"
+            className="lg:col-span-8 rounded-[12px] bg-white p-4 border border-[#ebebeb] relative min-h-[520px] flex items-center justify-center overflow-hidden shadow-whisper outline-none focus:outline-none"
             onMouseMove={(e) => {
               if (containerRef.current) {
                 const rect = containerRef.current.getBoundingClientRect();
@@ -445,7 +445,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                   const isHovered = hoveredStateName === stName;
                   const isFocused = zoomedState === stName;
                   const isDimmed = (hoveredStateName && !isHovered) || (zoomedState && !isFocused);
-                  const fillColor = stData ? colorScale(val) : '#E8F4F5';
+                  const fillColor = stData ? colorScale(val) : '#f2f2f2';
 
                   const staggerDelay = isEntranceDone ? 0 : idx * (MOTION_TOKENS?.revealStagger || 12);
 
@@ -454,19 +454,19 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                       key={stName + '-' + idx}
                       d={pathGenerator ? pathGenerator(feat) : ''}
                       fill={fillColor}
-                      stroke={isHovered ? (MOTION_TOKENS?.saffronOutline || '#FF9933') : isFocused ? '#145C66' : '#A6CFD5'}
-                      strokeWidth={isHovered ? 2.5 : isFocused ? 2 : 0.85}
-                      opacity={isDimmed ? (MOTION_TOKENS?.spotlightOpacity || 0.45) : 1}
+                      stroke={isHovered ? '#0070f3' : isFocused ? '#171717' : '#ffffff'}
+                      strokeWidth={isHovered ? 2.5 : isFocused ? 2 : 0.75}
+                      opacity={isDimmed ? (MOTION_TOKENS?.spotlightOpacity || 0.4) : 1}
                       cursor="pointer"
                       role="button"
                       aria-label={`${stName}: ${val} ${selectedMetric}`}
                       className="map-state-path transition-all duration-300 focus:outline-none focus:ring-0"
                       style={{
                         outline: 'none',
-                        transform: isHovered ? 'scale(1.03)' : 'scale(1)',
+                        transform: isHovered ? 'scale(1.025)' : 'scale(1)',
                         transformBox: 'fill-box',
                         transformOrigin: 'center',
-                        filter: isHovered ? 'drop-shadow(0 6px 14px rgba(0,0,0,0.28))' : 'none',
+                        filter: isHovered ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.18))' : 'none',
                         transitionDelay: `${staggerDelay}ms`
                       }}
                       onMouseEnter={() => {
@@ -488,8 +488,8 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                   if (!center) return null;
                   return (
                     <g key={'pulse-' + stName} pointerEvents="none" opacity={hoveredStateName ? 0 : 0.9} className="transition-opacity duration-300">
-                      <circle cx={center[0]} cy={center[1]} r={5} fill="#EF4444" />
-                      <circle cx={center[0]} cy={center[1]} className="animate-risk-pulse" stroke="#EF4444" fill="none" />
+                      <circle cx={center[0]} cy={center[1]} r={4} fill="#ee0000" />
+                      <circle cx={center[0]} cy={center[1]} className="animate-risk-pulse" stroke="#ee0000" fill="none" />
                     </g>
                   );
                 })}
@@ -504,14 +504,14 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                   return (
                     <g key={ut.name} transform={`translate(${pt[0]}, ${pt[1]})`}>
                       <circle
-                        r={isHovered ? 7 : 4.5}
-                        fill={isHovered ? (MOTION_TOKENS?.saffronOutline || '#FF9933') : '#0A434B'}
+                        r={isHovered ? 6 : 4}
+                        fill={isHovered ? '#0070f3' : '#171717'}
                         stroke="#ffffff"
                         strokeWidth={1.5}
                         cursor="pointer"
                         role="button"
                         aria-label={`UT ${ut.name}`}
-                        opacity={isDimmed ? 0.45 : 1}
+                        opacity={isDimmed ? 0.4 : 1}
                         className="transition-all duration-200 focus:outline-none focus:ring-0"
                         style={{ outline: 'none' }}
                         onMouseEnter={() => {
@@ -523,7 +523,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                       <text
                         y={-8}
                         textAnchor="middle"
-                        className="text-[9px] font-bold fill-slate-700 pointer-events-none"
+                        className="text-[9px] font-mono font-medium fill-[#4d4d4d] pointer-events-none"
                       >
                         {ut.name}
                       </text>
@@ -537,18 +537,18 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                     key={ripplePoint.key}
                     cx={ripplePoint.x}
                     cy={ripplePoint.y}
-                    className="animate-map-ripple stroke-amber-500 fill-amber-300/30"
+                    className="animate-map-ripple stroke-[#0070f3] fill-[#0070f3]/10"
                     pointerEvents="none"
                   />
                 )}
               </g>
             </svg>
 
-            {/* Smooth Floating Info Card (Glides with Spring Lerp) */}
+            {/* Smooth Floating Info Card (Geist Spec) */}
             {hoveredData && (
               <div 
                 ref={cardRef}
-                className={`absolute z-30 pointer-events-none rounded-2xl bg-white/95 border border-[#A6CFD5] p-4 shadow-2xl backdrop-blur-md w-72 text-left transition-opacity duration-200 text-slate-800 ${
+                className={`absolute z-30 pointer-events-none rounded-[12px] bg-white border border-[#ebebeb] p-4 shadow-[0_8px_24px_rgba(0,0,0,0.1)] w-72 text-left transition-opacity duration-200 text-[#171717] ${
                   isCardVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                 }`}
                 style={{
@@ -558,29 +558,29 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                 }}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-[#A6CFD5]/50 pb-2 mb-3">
-                  <h4 className="font-bold font-heading text-sm text-slate-900 flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-amber-600" />
+                <div className="flex items-center justify-between border-b border-[#ebebeb] pb-2 mb-3">
+                  <h4 className="font-semibold text-sm text-[#171717] flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-[#0070f3]" />
                     {hoveredData.stateName}
                   </h4>
-                  <span className="text-[10px] font-mono bg-[#E8F4F5] text-[#0A434B] px-2 py-0.5 rounded-full border border-[#A6CFD5] font-bold">
-                    Click for Projects
+                  <span className="mono-eyebrow text-[9px] bg-[#f2f2f2] text-[#171717] px-2 py-0.5 rounded-[4px] border border-[#ebebeb]">
+                    CLICK TO FILTER
                   </span>
                 </div>
 
                 {/* Animated Number Metrics */}
                 <div className="space-y-2 text-xs">
-                  <div className="flex justify-between items-center text-slate-700">
-                    <span className="font-medium">Total Projects:</span>
-                    <span className="font-extrabold font-mono text-slate-900 text-sm">
+                  <div className="flex justify-between items-center text-[#4d4d4d]">
+                    <span className="font-normal">Total Projects:</span>
+                    <span className="font-semibold font-mono text-[#171717] text-sm">
                       <CardCountTween value={hoveredData.totalProjects} />
                     </span>
                   </div>
 
                   {/* Slim Stacked Progress Bar */}
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex my-2 border border-slate-200">
+                  <div className="w-full bg-[#f2f2f2] h-1.5 rounded-full overflow-hidden flex my-2 border border-[#ebebeb]">
                     <div 
-                      className="bg-cyan-500 h-full transition-all duration-300"
+                      className="bg-[#0070f3] h-full transition-all duration-300"
                       style={{
                         width: `${hoveredData.totalProjects ? (hoveredData.ongoing / hoveredData.totalProjects) * 100 : 0}%`
                       }}
@@ -603,30 +603,30 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
-                    <div className="p-1.5 rounded-lg bg-cyan-50 border border-cyan-200 flex justify-between">
-                      <span className="text-cyan-900 font-semibold">Ongoing</span>
-                      <strong className="text-cyan-900"><CardCountTween value={hoveredData.ongoing} /></strong>
+                    <div className="p-1.5 rounded-[6px] bg-[#fafafa] border border-[#ebebeb] flex justify-between">
+                      <span className="text-[#4d4d4d] font-normal">Ongoing</span>
+                      <strong className="text-[#0070f3] font-mono"><CardCountTween value={hoveredData.ongoing} /></strong>
                     </div>
-                    <div className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 flex justify-between">
-                      <span className="text-emerald-900 font-semibold">Completed</span>
-                      <strong className="text-emerald-900"><CardCountTween value={hoveredData.completed} /></strong>
+                    <div className="p-1.5 rounded-[6px] bg-[#fafafa] border border-[#ebebeb] flex justify-between">
+                      <span className="text-[#4d4d4d] font-normal">Done</span>
+                      <strong className="text-emerald-600 font-mono"><CardCountTween value={hoveredData.completed} /></strong>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 flex justify-between">
-                      <span className="text-amber-900 font-semibold">Delayed</span>
-                      <strong className="text-amber-900"><CardCountTween value={hoveredData.delayed} /></strong>
+                    <div className="p-1.5 rounded-[6px] bg-[#fafafa] border border-[#ebebeb] flex justify-between">
+                      <span className="text-[#4d4d4d] font-normal">Delayed</span>
+                      <strong className="text-amber-600 font-mono"><CardCountTween value={hoveredData.delayed} /></strong>
                     </div>
-                    <div className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 flex justify-between">
-                      <span className="text-rose-900 font-semibold">High-Risk</span>
-                      <strong className="text-rose-900"><CardCountTween value={hoveredData.highRisk} /></strong>
+                    <div className="p-1.5 rounded-[6px] bg-[#fafafa] border border-[#ebebeb] flex justify-between">
+                      <span className="text-[#4d4d4d] font-normal">High Risk</span>
+                      <strong className="text-rose-600 font-mono"><CardCountTween value={hoveredData.highRisk} /></strong>
                     </div>
                   </div>
 
-                  <div className="flex justify-between pt-2 border-t border-[#A6CFD5]/50 text-slate-800 text-xs font-bold">
-                    <span>Est. Expenditure:</span>
-                    <span className="text-amber-800 font-mono">
+                  <div className="flex justify-between pt-2 border-t border-[#ebebeb] text-[#171717] text-xs">
+                    <span className="font-normal text-[#4d4d4d]">Investment:</span>
+                    <span className="text-[#171717] font-semibold font-mono">
                       <CardCountTween value={hoveredData.totalCost} prefix="₹ " suffix=" Cr" />
                     </span>
                   </div>
@@ -636,40 +636,39 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
             )}
 
             {/* Vertical Heatmap Legend */}
-            <div className={`absolute bottom-4 left-4 p-3 rounded-2xl bg-white/95 border border-[#A6CFD5] text-xs backdrop-blur-md space-y-2 shadow-sm transition-opacity duration-500 ${isEntranceDone ? 'opacity-100' : 'opacity-0'}`}>
-              <span className="font-mono text-[10px] text-slate-600 block uppercase font-bold">
+            <div className={`absolute bottom-4 left-4 p-2.5 rounded-[8px] bg-white border border-[#ebebeb] text-xs shadow-whisper space-y-1.5 transition-opacity duration-500 ${isEntranceDone ? 'opacity-100' : 'opacity-0'}`}>
+              <span className="mono-eyebrow text-[9px] text-[#8f8f8f] block">
                 {metricLabels[selectedMetric]} Scale
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-slate-600 font-mono font-semibold">Low</span>
-                <div className="w-28 h-3 rounded-full bg-gradient-to-r from-[#BAE6FD] via-[#2563EB] to-[#03045E] border border-slate-300"></div>
-                <span className="text-[10px] text-slate-600 font-mono font-semibold">High</span>
+                <span className="text-[10px] text-[#8f8f8f] font-mono">Low</span>
+                <div className="w-24 h-2 rounded-full bg-gradient-to-r from-[#d3e5ff] via-[#0070f3] to-[#171717] border border-[#ebebeb]"></div>
+                <span className="text-[10px] text-[#8f8f8f] font-mono">High</span>
               </div>
-              <p className="text-[10px] text-slate-500 italic">Hover to zoom • Click to view projects</p>
             </div>
 
           </div>
 
           {/* RIGHT COLUMN: Top 5 States Ranking List */}
           <div className="lg:col-span-4 space-y-4">
-            <div className={`rounded-3xl glass-panel p-5 border border-[#A6CFD5] bg-white shadow-md transition-opacity duration-500 ${isEntranceDone ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`rounded-[12px] bg-white p-5 border border-[#ebebeb] shadow-whisper transition-opacity duration-500 ${isEntranceDone ? 'opacity-100' : 'opacity-0'}`}>
               
-              <div className="flex items-center justify-between mb-3 border-b border-[#A6CFD5]/50 pb-2">
-                <h3 className="text-base font-bold font-heading text-slate-900 flex items-center gap-2">
-                  <Info className="w-4 h-4 text-[#145C66]" />
-                  Top 5 States Portfolio
+              <div className="flex items-center justify-between mb-3 border-b border-[#ebebeb] pb-2">
+                <h3 className="text-sm font-semibold text-[#171717] flex items-center gap-2 tracking-tight">
+                  <Info className="w-4 h-4 text-[#8f8f8f]" />
+                  Top 5 States Ranking
                 </h3>
-                <span className="text-[10px] font-mono font-bold bg-[#E8F4F5] text-[#0A434B] px-2 py-0.5 rounded border border-[#A6CFD5]">
+                <span className="mono-eyebrow text-[10px] bg-[#f2f2f2] text-[#171717] px-2 py-0.5 rounded-[4px] border border-[#ebebeb]">
                   {metricLabels[selectedMetric]}
                 </span>
               </div>
 
-              <p className="text-xs text-slate-600 mb-4 leading-relaxed">
-                Hover to zoom map. Click any state in the list to open its project portfolio.
+              <p className="text-xs text-[#4d4d4d] mb-4 font-normal">
+                Hover to focus map region. Click any state row to view all matching projects.
               </p>
 
               {/* Top 5 States Interactive Ranking List */}
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {top5States.map((stObj, idx) => {
                   const isHovered = hoveredStateName === stObj.stateName;
                   const isFocused = zoomedState === stObj.stateName;
@@ -688,25 +687,25 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                         setIsCardVisible(false);
                       }}
                       onClick={(e) => handleStateClick(stObj.stateName, e)}
-                      className={`p-3 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between group focus:outline-none ${
+                      className={`p-2.5 rounded-[8px] border transition-all duration-150 cursor-pointer flex items-center justify-between group focus:outline-none ${
                         isHovered || isFocused
-                          ? 'bg-[#E8F4F5] border-[#FF9933] shadow-md -translate-y-0.5'
-                          : 'bg-[#F4F9F9]/80 border-[#A6CFD5]/60 hover:bg-white hover:border-[#145C66]'
+                          ? 'bg-[#fafafa] border-[#171717] shadow-xs -translate-y-0.5'
+                          : 'bg-[#ffffff] border-[#ebebeb] hover:border-[#d4d4d4] hover:bg-[#fafafa]'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className={`w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold ${
-                          isHovered || isFocused ? 'bg-[#FF9933] text-white' : 'bg-[#A6CFD5]/40 text-[#0A434B]'
+                      <div className="flex items-center gap-2.5">
+                        <span className={`w-5 h-5 rounded-[4px] flex items-center justify-center font-mono text-[11px] font-semibold ${
+                          isHovered || isFocused ? 'bg-[#171717] text-white' : 'bg-[#f2f2f2] text-[#171717]'
                         }`}>
                           {idx + 1}
                         </span>
                         <div>
-                          <p className={`text-xs font-bold transition-colors ${
-                            isHovered || isFocused ? 'text-[#0A434B]' : 'text-slate-900 group-hover:text-[#145C66]'
+                          <p className={`text-xs font-semibold transition-colors ${
+                            isHovered || isFocused ? 'text-[#0070f3]' : 'text-[#171717]'
                           }`}>
                             {stObj.stateName}
                           </p>
-                          <p className="text-[10px] text-slate-500 font-medium">
+                          <p className="text-[10px] text-[#8f8f8f] font-mono mt-0.5">
                             {stObj.totalProjects} Projects • ₹{(stObj.totalCost / 1000).toFixed(1)}k Cr
                           </p>
                         </div>
@@ -714,12 +713,12 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
 
                       <div className="flex items-center gap-2">
                         {stObj.highRisk > 0 && (
-                          <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-mono border border-rose-300 font-bold">
+                          <span className="px-1.5 py-0.5 rounded-[4px] bg-[#fff0f0] text-[#ee0000] text-[9px] font-mono border border-[#ffd5d5] font-semibold">
                             {stObj.highRisk} Risk
                           </span>
                         )}
                         <ArrowRight className={`w-3.5 h-3.5 transition-transform ${
-                          isHovered || isFocused ? 'translate-x-1 text-[#FF9933]' : 'text-slate-400 group-hover:text-[#145C66]'
+                          isHovered || isFocused ? 'translate-x-0.5 text-[#0070f3]' : 'text-[#8f8f8f]'
                         }`} />
                       </div>
                     </div>
