@@ -40,14 +40,17 @@ export default function ThreeLayerIntelligence({ project }) {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
-  const chatEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
-  // Auto-scroll chat to bottom
+  // Auto-scroll chat box internally to bottom without moving or sliding the outer page/window
   useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
-  }, [chatMessages]);
+  }, [chatMessages, isChatLoading, activeLayer]);
 
   // Handle generating initial diagnostic report
   const handleGenerateBriefing = async () => {
@@ -438,6 +441,7 @@ export default function ThreeLayerIntelligence({ project }) {
               ].map((promptText, i) => (
                 <button
                   key={i}
+                  type="button"
                   onClick={() => handleSendMessage(promptText)}
                   disabled={isChatLoading}
                   className="px-2.5 py-1 rounded-[6px] bg-[#fafafa] hover:bg-[#f0f7ff] text-[#4d4d4d] hover:text-[#0070f3] text-[11px] border border-[#ebebeb] hover:border-[#0070f3] transition-all flex items-center gap-1 font-mono text-left disabled:opacity-50"
@@ -450,7 +454,10 @@ export default function ThreeLayerIntelligence({ project }) {
           </div>
 
           {/* Interactive Chat Stream & History Box */}
-          <div className="rounded-[8px] bg-[#fafafa] border border-[#ebebeb] p-4 min-h-[320px] max-h-[560px] overflow-y-auto space-y-4 font-sans text-xs">
+          <div 
+            ref={chatContainerRef}
+            className="rounded-[8px] bg-[#fafafa] border border-[#ebebeb] p-4 min-h-[320px] max-h-[560px] overflow-y-auto space-y-4 font-sans text-xs"
+          >
             {chatMessages.length === 0 && !isGenerating && (
               <div className="text-center py-10 space-y-3 text-[#8f8f8f]">
                 <Bot className="w-10 h-10 text-[#8f8f8f] mx-auto opacity-50" />
@@ -503,8 +510,6 @@ export default function ThreeLayerIntelligence({ project }) {
                 <span>Synthesizing project telemetry into executive officer brief...</span>
               </div>
             )}
-
-            <div ref={chatEndRef} />
           </div>
 
           {/* Chat Input Field */}
