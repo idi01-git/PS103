@@ -104,7 +104,8 @@ export default function ReportDownloadModal({ project, isOpen, onClose, selected
           </div>
         </div>
 
-        {/* Report List */}
+        {/* Report List - Export options commented out */}
+        {/*
         <div className="space-y-2.5">
           {reportTypes.map((rt) => {
             const Icon = rt.icon;
@@ -146,6 +147,10 @@ export default function ReportDownloadModal({ project, isOpen, onClose, selected
               </div>
             );
           })}
+        </div>
+        */}
+        <div className="p-4 rounded-[6px] border border-dashed border-[#ebebeb] text-center text-xs text-[#8f8f8f] font-mono">
+          Export options are currently disabled
         </div>
 
         {/* Footer info */}

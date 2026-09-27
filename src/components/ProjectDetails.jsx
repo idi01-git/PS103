@@ -117,6 +117,7 @@ export default function ProjectDetails({ projectId, onBack, onOpenReportModal })
             </span>
           </div>
 
+          {/* Export option commented out
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => onOpenReportModal && onOpenReportModal(project)}
@@ -126,6 +127,7 @@ export default function ProjectDetails({ projectId, onBack, onOpenReportModal })
               <span>Download Intelligence Report</span>
             </button>
           </div>
+          */}
         </div>
 
         {/* ==================================================== */}
