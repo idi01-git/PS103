@@ -12,7 +12,7 @@
 [![Audit Status](https://img.shields.io/badge/Integrity%20Audit-24%2F24%20Checks%20Passed-emerald.svg)](#24-point-integrity-audit)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
-[Live Demonstration](#live-demonstration) • [System Architecture](#system-architecture) • [ML Performance Benchmark](#machine-learning-benchmark) • [Installation & Setup](#getting-started) • [Documentation](docs/ARCHITECTURE.md)
+[Architecture](docs/ARCHITECTURE.md) • [PDF Extraction](docs/DATA_EXTRACTION_PIPELINE.md) • [Challenges & Deliverables](docs/CHALLENGES_AND_DELIVERABLES.md) • [ML Benchmark](docs/MODEL_PERFORMANCE.md) • [User Guide](docs/USER_GUIDE.md)
 
 ---
 
@@ -285,6 +285,8 @@ PS103/
 ├── data_bundle/               # Authoritative MoSPI raw & feature-selected datasets (v3.2)
 ├── docs/                      # Comprehensive technical documentation
 │   ├── ARCHITECTURE.md        # Complete system design & data pipeline specifications
+│   ├── DATA_EXTRACTION_PIPELINE.md # 15,400+ page PDF extraction & entity resolution
+│   ├── CHALLENGES_AND_DELIVERABLES.md # Problems faced, solutions & PS 26103 mapping
 │   ├── MODEL_PERFORMANCE.md   # Exact test/validation metrics & calibration benchmarks
 │   └── USER_GUIDE.md          # Officer user manual & platform walkthrough
 ├── outputs/                   # Machine learning artifacts & frozen model decisions
