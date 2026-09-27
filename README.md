@@ -45,11 +45,11 @@ India's national infrastructure pipeline involves thousands of concurrent capita
 
 ## 📄 Automated PDF Extraction & Longitudinal Ingestion Engine
 
-A foundational engineering achievement of PAIMANA is resolving the **unstructured document barrier**: MoSPI infrastructure data is historically locked inside **dozens of massive quarterly PDF publications** (spanning from 2019 to 2026), each running **300 to 500+ pages**. 
+A foundational engineering achievement of PAIMANA is resolving the **unstructured document barrier**: MoSPI infrastructure data is historically locked inside **dozens of massive quarterly PDF publications** (spanning from 2019 to 2026), each running **800+ pages per quarter** (totaling **over 24,000+ pages across 7 years**). 
 
-Our automated Python extraction engine transformed over **15,400 pages of multi-year PDFs** into an authoritative longitudinal dataset:
+Our automated Python extraction engine transformed over **24,000+ pages of multi-year PDFs** into an authoritative longitudinal dataset:
 
-- **Massive Multi-Year Ingestion**: Ingested and parsed **36 consecutive quarterly publications** (Q1 2019–20 through Q4 2025–26) covering 4,547 capital projects.
+- **Massive Multi-Year Ingestion**: Ingested and parsed **36 consecutive quarterly publications** (Q1 2019–20 through Q4 2025–26) covering 4,547 capital projects across 800+ pages per quarterly release.
 - **Geometric Coordinate & Table Stitching**: Leveraged `pdfplumber` and `PyMuPDF (fitz)` using horizontal anchor bands and whitespace column projections to reconstruct high-density tables wrapping across hundreds of pages without vertical gridlines.
 - **Financial & Timeline Normalization**: Reconciled historical header drift and currency variations (Lakhs vs. Crores) into standardized ₹ Crore figures with strict decimal precision.
 - **Qualitative Issue & Bottleneck Mining**: Extracted narrative officer remarks and classified on-ground impediments into canonical tags (Land Acquisition, Forest/MoEF Clearances, Contractor Termination, Law & Order, Adverse Geology) linked with exact page-level provenance (e.g. `2019-20_Q1_Apr-Jun.pdf p. 188`).
@@ -65,7 +65,7 @@ Our automated Python extraction engine transformed over **15,400 pages of multi-
 ```mermaid
 flowchart TB
     subgraph DataIngestion["1. DATA INGESTION & PDF EXTRACTION ENGINE"]
-        P1["36 Quarterly MoSPI PDFs<br/>(15,400+ Pages, 2019–2026)"] --> P2["Layout & Coordinate Parser<br/>(pdfplumber / PyMuPDF)"]
+        P1["36 Quarterly MoSPI PDFs<br/>(24,000+ Pages, 800+/Quarter)"] --> P2["Layout & Coordinate Parser<br/>(pdfplumber / PyMuPDF)"]
         P2 --> P3["Tabular Multi-Page Stitching<br/>& Currency Normalization"]
         P2 --> P4["NLP Bottleneck Extractor<br/>(3,223 Real Issue Citations)"]
         P3 & P4 --> D1["Longitudinal Entity Resolution<br/>56,949 Snapshots | 4,547 Projects"]
@@ -285,7 +285,7 @@ PS103/
 ├── data_bundle/               # Authoritative MoSPI raw & feature-selected datasets (v3.2)
 ├── docs/                      # Comprehensive technical documentation
 │   ├── ARCHITECTURE.md        # Complete system design & data pipeline specifications
-│   ├── DATA_EXTRACTION_PIPELINE.md # 15,400+ page PDF extraction & entity resolution
+│   ├── DATA_EXTRACTION_PIPELINE.md # 24,000+ page (800+/quarter) PDF extraction & entity resolution
 │   ├── CHALLENGES_AND_DELIVERABLES.md # Problems faced, solutions & PS 26103 mapping
 │   ├── MODEL_PERFORMANCE.md   # Exact test/validation metrics & calibration benchmarks
 │   └── USER_GUIDE.md          # Officer user manual & platform walkthrough

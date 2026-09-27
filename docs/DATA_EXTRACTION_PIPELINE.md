@@ -6,15 +6,15 @@
 
 ## 1. The MoSPI Data Challenge: Unstructured Multi-Year PDFs
 
-Under the mandate of the **Ministry of Statistics and Programme Implementation (MoSPI)**, Central Sector infrastructure projects costing ₹150 Crore and above are monitored through the Online Central Monitoring System (OCMS). However, historical data and deep qualitative project reviews are published as **massive quarterly PDF publications** (spanning from 2019 to 2026), each often running **300 to 500+ pages**.
+Under the mandate of the **Ministry of Statistics and Programme Implementation (MoSPI)**, Central Sector infrastructure projects costing ₹150 Crore and above are monitored through the Online Central Monitoring System (OCMS). However, historical data and deep qualitative project reviews are published as **massive quarterly PDF publications** (spanning from 2019 to 2026), each running **more than 800+ pages per quarter** (aggregating to **over 24,000+ dense pages across 7 years**).
 
 ```
 +----------------------------------------------------------------------------------------------------+
 |                               THE HISTORICAL MOSPI PDF PROBLEM                                     |
 |                                                                                                    |
-|  [ 36 Quarterly PDF Reports ]   -->   [ 15,000+ Dense PDF Pages ]   -->   [ Unstructured Data ]   |
-|  - Q1 2019-20 to Q4 2025-26            - Mixed digital/vector layouts       - Wrapped tabular rows |
-|  - Over 7 years of history             - Varying column counts              - Shifting headers     |
+|  [ 36 Quarterly PDF Reports ]   -->   [ 24,000+ Dense PDF Pages ]   -->   [ Unstructured Data ]   |
+|  - Q1 2019-20 to Q4 2025-26            - 800+ pages per quarterly release   - Wrapped tabular rows |
+|  - Over 7 years of history             - Mixed digital/vector layouts       - Shifting headers     |
 |  - 4,547 unique projects               - Free-text officer remarks          - Non-standard IDs     |
 +----------------------------------------------------------------------------------------------------+
                                                   │
@@ -132,7 +132,7 @@ The raw extracted bundle underwent rigorous automated validation:
 | Metric | Empirical Figure |
 |---|---|
 | **Quarterly MoSPI PDF Publications Processed** | **36 Publications** (Q1 2019–20 to Q4 2025–26) |
-| **Total PDF Pages Scanned & Parsed** | **15,400+ Pages** |
+| **Total PDF Pages Scanned & Parsed** | **Over 24,000+ Pages** (800+ pages per quarterly report) |
 | **Total Structured Project Snapshots Extracted** | **56,949 Quarterly Observation Rows** |
 | **Unique Infrastructure Projects Monitored** | **4,547 Capital Initiatives** |
 | **Central Ministries & Departments Covered** | **35+ Ministries** (MoRTH, Railways, Power, Coal, Petroleum, etc.) |

@@ -48,8 +48,8 @@ The PAIMANA system is engineered to solve the systemic operational challenges id
 ## 2. Data Engineering & Preprocessing Pipeline
 
 ### 2.1 The Automated PDF Extraction & Ingestion Engine
-Historically, MoSPI monitoring data is distributed as massive quarterly PDF review reports (each 300 to 500+ pages) rather than machine-readable databases. PAIMANA implements an automated Python extraction engine:
-- **36 Quarterly PDF Publications (2019–2026)**: Ingested and parsed over **15,400 pages** using coordinate projection tracking (`pdfplumber` / `PyMuPDF`) to handle multi-page tabular spillage without vertical gridlines.
+Historically, MoSPI monitoring data is distributed as massive quarterly PDF review reports (running **800+ pages per quarter**, totaling **over 24,000+ pages across 7 years**) rather than machine-readable databases. PAIMANA implements an automated Python extraction engine:
+- **36 Quarterly PDF Publications (2019–2026)**: Ingested and parsed over **24,000+ pages** (800+ pages per quarterly release) using coordinate projection tracking (`pdfplumber` / `PyMuPDF`) to handle multi-page tabular spillage without vertical gridlines.
 - **Financial Normalization & Date Disambiguation**: Standardized diverse historical column schemas, currency units (converting Lakhs and Crores to uniform ₹ Crore), and calendar milestones.
 - **Qualitative NLP Bottleneck Mining**: Regex and keyword taxonomies parsed narrative officer remarks to extract **3,223 verified qualitative issue records** (land acquisition disputes, forest clearances, contractor terminations) with exact page-level provenance.
 - **Longitudinal Entity Resolution**: Linked 4,547 unique capital projects across 36 consecutive snapshot dates using sanitized OCMS codes and Levenshtein string matching ($\ge 0.92$ threshold).

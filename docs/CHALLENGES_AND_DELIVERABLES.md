@@ -9,7 +9,7 @@
 
 The **Ministry of Statistics and Programme Implementation (MoSPI)** is tasked with monitoring Central Sector infrastructure projects costing ₹150 Crore and above through the Online Central Monitoring System (OCMS). Historically, this monitoring process has been constrained by:
 1. **Retrospective Lag Reporting**: Reports highlight delays only after original milestone target dates have already passed.
-2. **Unstructured Data Silos**: Seven years of detailed qualitative field reviews are published as massive quarterly PDF releases (running 300 to 500+ pages each) rather than structured databases.
+2. **Unstructured Data Silos**: Seven years of detailed qualitative field reviews are published as massive quarterly PDF releases (running **800+ pages per quarter**, aggregating to **over 24,000+ pages across 7 years**) rather than structured databases.
 3. **Lack of Multi-Horizon Forward Visibility**: Executives lack quantified foresight into how risks compound across 3, 6, 12, 15, and 18 months.
 4. **Absence of Actionable Intervention Protocols**: Traditional dashboards report statistics without synthesizing specific administrative actions under inter-ministerial frameworks like **PM-GatiShakti**.
 
@@ -27,8 +27,8 @@ The **Ministry of Statistics and Programme Implementation (MoSPI)** is tasked wi
 ├──────────────────────────────────────┬───────────────────────────────────────────────────────────┤
 │ Challenge Encountered                │ Engineering Solution Implemented                          │
 ├──────────────────────────────────────┼───────────────────────────────────────────────────────────┤
-│ 15,400+ pages of unstructured MoSPI  │ Developed Python pipeline (`pdfplumber` / `PyMuPDF`) with │
-│ quarterly PDFs across 2019-2026      │ geometric coordinate tracking and anchor band detection.  │
+│ 24,000+ pages of unstructured MoSPI  │ Developed Python pipeline (`pdfplumber` / `PyMuPDF`) with │
+│ quarterly PDFs (800+/quarter, 7 yrs) │ geometric coordinate tracking and anchor band detection.  │
 ├──────────────────────────────────────┼───────────────────────────────────────────────────────────┤
 │ High-density tables wrapping across  │ Stitched cross-page continuation vectors by tracking      │
 │ hundreds of consecutive pages        │ whitespace column projections without vertical borders.   │
@@ -50,9 +50,9 @@ The **Ministry of Statistics and Programme Implementation (MoSPI)** is tasked wi
 └──────────────────────────────────────┴───────────────────────────────────────────────────────────┘
 ```
 
-#### 1. Challenge: 15,400+ Pages of Unstructured PDFs
-- **The Problem**: MoSPI publishes quarterly project monitoring reports as dense PDF documents (from Q1 2019–20 through Q4 2025–26). There was no consolidated, clean SQL database available covering the 7-year longitudinal history of all 4,547 projects.
-- **How We Tackled It**: Built an automated Python extraction engine using `pdfplumber` and `PyMuPDF (fitz)`. Rather than relying on simple border recognition (which fails on MoSPI tables lacking vertical rules), our system tracked horizontal anchor bands (`Sl. No.`, `Project Name`, `Anticipated Cost`, `Expenditure`, `Physical Progress %`) and whitespace column projection vectors across 36 quarterly publications, successfully parsing all 15,400+ pages into structured JSON/CSV data.
+#### 1. Challenge: Over 24,000+ Pages of Unstructured PDFs (800+ Pages/Quarter)
+- **The Problem**: MoSPI publishes quarterly project monitoring reports as dense PDF documents running **more than 800+ pages each** (spanning 36 quarters over 7 years from 2019 to 2026, totaling **over 24,000+ pages**). There was no consolidated, clean SQL database available covering the 7-year longitudinal history of all 4,547 projects.
+- **How We Tackled It**: Built an automated Python extraction engine using `pdfplumber` and `PyMuPDF (fitz)`. Rather than relying on simple border recognition (which fails on MoSPI tables lacking vertical rules), our system tracked horizontal anchor bands (`Sl. No.`, `Project Name`, `Anticipated Cost`, `Expenditure`, `Physical Progress %`) and whitespace column projection vectors across 36 quarterly publications, successfully parsing all 24,000+ pages into structured JSON/CSV data.
 
 #### 2. Challenge: Table Spillage Across Multiple Pages
 - **The Problem**: Tabular annexures contain over 1,900 concurrent projects and wrap across 150+ consecutive pages. Cell text (such as project names or implementing agencies) frequently breaks across line feeds and page boundaries, causing standard parsers to produce fragmented, orphan rows.
@@ -252,7 +252,7 @@ Below is the definitive verification matrix demonstrating how every deliverable 
 | Dimension | Legacy MoSPI OCMS Monitoring | PAIMANA Production Platform (PS 26103) |
 |---|---|---|
 | **Monitoring Paradigm** | Retrospective, lag-indicator reporting after milestones elapse | Proactive, multi-horizon early-warning (3M to 18M forward runway) |
-| **Data Format** | Unstructured quarterly PDFs (15,400+ pages over 7 years) | Automated coordinate extraction into structured time-series (56,949 snapshots) |
+| **Data Format** | Unstructured quarterly PDFs (24,000+ pages over 7 years, 800+/quarter) | Automated coordinate extraction into structured time-series (56,949 snapshots) |
 | **Predictive Rigor** | None (Static officer estimates) | Rigorously calibrated ensembles (CatBoost, XGBoost, LightGBM, Random Forest) |
 | **Explainability** | Unstructured narrative text | Additive TreeSHAP feature attributions + 3,223 linked official evidence records |
 | **Executive Actionability** | High-level tabular summaries | Plain-English 30-day intervention memos aligned with PM-GatiShakti (GPTOSS-120B) |
