@@ -150,12 +150,28 @@ function AppContent() {
             <HeroSection
               onExploreDashboard={() => {
                 const statsEl = document.getElementById('national-portfolio-section');
-                if (statsEl) statsEl.scrollIntoView({ behavior: 'smooth' });
+                if (statsEl) {
+                  const navHeight = 56;
+                  const rect = statsEl.getBoundingClientRect();
+                  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                  window.scrollTo({
+                    top: Math.max(0, rect.top + scrollTop - navHeight - 12),
+                    behavior: 'smooth'
+                  });
+                }
               }}
               onViewProjects={() => handleTabChange('projects')}
               onExploreMap={() => {
                 const mapEl = document.getElementById('india-map-section');
-                if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth' });
+                if (mapEl) {
+                  const navHeight = 56;
+                  const rect = mapEl.getBoundingClientRect();
+                  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                  window.scrollTo({
+                    top: Math.max(0, rect.top + scrollTop - navHeight - 12),
+                    behavior: 'smooth'
+                  });
+                }
               }}
             />
 
@@ -169,7 +185,7 @@ function AppContent() {
             </div>
 
             {/* 4. Interactive India Project Map (Powered by Neon state_summaries) */}
-            <div id="india-map-section">
+            <div>
               <IndiaMap 
                 onSelectState={handleSelectStateFromMap} 
                 customStateData={stateAggregates}

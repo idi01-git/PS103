@@ -3,7 +3,57 @@ import * as d3 from 'd3';
 import { getStateAggregates } from '../data/projectsData';
 import indiaGeoJson from '../data/india.json';
 import { MOTION_TOKENS, getPrefersReducedMotion } from '../utils/motionTokens';
-import { MapPin, Info, ArrowRight, X, AlertTriangle, ShieldAlert, CheckCircle, Clock, Layers } from 'lucide-react';
+import { MapPin, Info, ArrowRight, X, AlertTriangle, ShieldAlert, CheckCircle, Clock, Layers, ChevronDown, BarChart3, TrendingUp, Sparkles } from 'lucide-react';
+
+// Format Indian Currency in Crores / Lakh Crores for professional readability
+export function formatStateCost(costInCr) {
+  if (!costInCr || isNaN(costInCr)) return '₹0 Cr';
+  const num = Number(costInCr);
+  if (num >= 100000) {
+    return `₹${(num / 100000).toFixed(2)} Lakh Cr`;
+  }
+  return `₹${num.toLocaleString('en-IN')} Cr`;
+}
+
+// Interactive Metric Switcher Configuration
+export const METRIC_CONFIG = {
+  totalProjects: {
+    key: 'totalProjects',
+    label: 'Projects',
+    title: 'Monitored Projects',
+    unit: 'Projects',
+    color: '#0070f3',
+    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+    colorScaleRange: ['#dbeafe', '#93c5fd', '#3b82f6', '#1d4ed8', '#0f172a']
+  },
+  totalCost: {
+    key: 'totalCost',
+    label: 'Capital',
+    title: 'Sanctioned Capex',
+    unit: '₹ Cr',
+    color: '#059669',
+    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    colorScaleRange: ['#d1fae5', '#6ee7b7', '#10b981', '#047857', '#064e3b']
+  },
+  delayed: {
+    key: 'delayed',
+    label: 'Delayed',
+    title: 'Delayed Projects',
+    unit: 'Delayed',
+    color: '#d97706',
+    badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+    colorScaleRange: ['#fef3c7', '#fcd34d', '#f59e0b', '#b45309', '#451a03']
+  },
+  highRisk: {
+    key: 'highRisk',
+    label: 'Risk',
+    title: 'Critical Risk',
+    unit: 'High Risk',
+    color: '#dc2626',
+    badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
+    colorScaleRange: ['#ffe4e6', '#fca5a5', '#ef4444', '#b91c1c', '#450a0a']
+  }
+};
 
 // State Name Normalization helper matching GeoJSON polygons to Neon DB
 export function normalizeGeoStateName(rawName) {
@@ -121,10 +171,11 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
 
   // States & Controls
   const [selectedMetric, setSelectedMetric] = useState('totalProjects');
+  const [showTop10, setShowTop10] = useState(false);
   const [hoveredStateName, setHoveredStateName] = useState(null);
   const [isCardVisible, setIsCardVisible] = useState(false);
   const [activeMobileState, setActiveMobileState] = useState(null);
-  const [dimensions, setDimensions] = useState({ width: 680, height: 600 });
+  const [dimensions, setDimensions] = useState({ width: 680, height: 470 });
   const [ripplePoint, setRipplePoint] = useState(null);
   const [zoomTransform, setZoomTransform] = useState({ k: 1, x: 0, y: 0 });
   const [zoomedState, setZoomedState] = useState(null);
@@ -146,24 +197,40 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
     return DEFAULT_STATE_AGGREGATES;
   }, [customStateData]);
 
-  // Top 5 States computed by selected metric
-  const top5States = useMemo(() => {
+  // Geographic States only (exclude non-geographic Multi-State from spatial rankings)
+  const rankedStates = useMemo(() => {
     return Object.values(stateAggregates)
-      .sort((a, b) => (b[selectedMetric] || 0) - (a[selectedMetric] || 0))
-      .slice(0, 5);
+      .filter(s => s.stateName && s.stateName !== 'Multi-State')
+      .sort((a, b) => (Number(b[selectedMetric]) || 0) - (Number(a[selectedMetric]) || 0));
   }, [stateAggregates, selectedMetric]);
+
+  // Displayed ranked states (Top 5 or Top 10)
+  const displayStates = useMemo(() => {
+    return rankedStates.slice(0, showTop10 ? 10 : 5);
+  }, [rankedStates, showTop10]);
+
+  // Dedicated aggregate for Multi-State / National Corridors
+  const multiStateData = useMemo(() => {
+    return stateAggregates['Multi-State'] || {
+      stateName: 'Multi-State',
+      totalProjects: 462,
+      totalCost: 320113,
+      delayed: 78,
+      highRisk: 120
+    };
+  }, [stateAggregates]);
 
   // Top 3 Critical States for Subtle Risk Pulse Cue
   const topCriticalStateNames = useMemo(() => {
-    return Object.values(stateAggregates)
-      .sort((a, b) => (b.highRisk || 0) - (a.highRisk || 0))
+    return rankedStates
       .slice(0, 3)
       .map(s => s.stateName);
-  }, [stateAggregates]);
+  }, [rankedStates]);
 
-  // Color Scale Generator for Choropleth Heatmap (Vercel Geist Blue-to-Ink Palette)
+  // Color Scale Generator for Choropleth Heatmap based on active metric
   const colorScale = useMemo(() => {
-    const values = Object.values(stateAggregates).map(s => s[selectedMetric] || 0);
+    const config = METRIC_CONFIG[selectedMetric] || METRIC_CONFIG.totalProjects;
+    const values = rankedStates.map(s => Number(s[selectedMetric]) || 0);
     const minVal = d3.min(values) || 0;
     const maxVal = d3.max(values) || 50;
 
@@ -175,21 +242,21 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
         minVal + (maxVal - minVal) * 0.75,
         maxVal
       ])
-      .range(['#d3e5ff', '#70aeff', '#0070f3', '#0761d1', '#171717']);
-  }, [stateAggregates, selectedMetric]);
+      .range(config.colorScaleRange);
+  }, [rankedStates, selectedMetric]);
 
   // Responsive Canvas Resize Observer
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current) {
         const w = containerRef.current.clientWidth;
-        const h = Math.min(Math.max(w * 0.92, 460), 650);
+        // Optimal aspect ratio for India geometry fitting cleanly in viewport without spilling
+        const h = Math.min(Math.max(w * 0.65, 380), 470);
         setDimensions({ width: w, height: h });
       }
     };
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Spring animation loop for floating info card gliding
@@ -401,33 +468,48 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
     totalCost: 'Total Cost (₹ Cr)'
   };
 
+  const activeMetricConfig = METRIC_CONFIG[selectedMetric] || METRIC_CONFIG.totalProjects;
+
+  // Dynamic legend gradient CSS based on active metric
+  const legendGradient = `linear-gradient(to right, ${activeMetricConfig.colorScaleRange[0]}, ${activeMetricConfig.colorScaleRange[2]}, ${activeMetricConfig.colorScaleRange[4]})`;
+
   return (
-    <section id="india-map-section" className="py-14 sm:py-20 bg-[#fafafa] border-b border-[#ebebeb] select-none">
+    <section id="india-map-section" className="py-6 sm:py-8 bg-[#fafafa] border-b border-[#ebebeb] select-none scroll-mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        {/* Compact Section Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-4 gap-2">
           <div>
-            <div className="inline-flex items-center gap-2 mono-eyebrow text-[#8f8f8f] mb-2">
+            <div className="inline-flex items-center gap-1.5 mono-eyebrow text-[#8f8f8f] mb-1">
               <MapPin className="w-3.5 h-3.5 text-[#0070f3]" />
               <span>SPATIAL SURVEILLANCE // NATIONAL CHOROPLETH</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-semibold text-[#171717] tracking-[-1.28px]">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#171717] tracking-tight">
               Interactive India Project Map
             </h2>
-            <p className="text-sm text-[#4d4d4d] mt-1 font-normal">
-              Hover over any state to zoom in &amp; inspect telemetry. Click to open state project portfolio.
+            <p className="text-xs text-[#64748b] mt-0.5 font-normal">
+              Hover over any state to inspect telemetry and auto-focus. Click any state row to view matched projects.
             </p>
           </div>
+
+          {zoomedState && (
+            <button
+              onClick={() => zoomToState(null)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-md shadow-xs transition-colors self-start md:self-auto cursor-pointer"
+            >
+              <span>Reset National View</span>
+              <X className="w-3.5 h-3.5 text-slate-500" />
+            </button>
+          )}
         </div>
 
         {/* Main 2-Column Map & Sidebar Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
           {/* LEFT COLUMN: SVG Map Canvas & Floating Info Card */}
           <div 
             ref={containerRef} 
-            className="lg:col-span-8 rounded-[12px] bg-white p-4 border border-[#ebebeb] relative min-h-[520px] flex items-center justify-center overflow-hidden shadow-whisper outline-none focus:outline-none"
+            className="lg:col-span-7 xl:col-span-8 rounded-[12px] bg-white p-3 sm:p-4 border border-[#ebebeb] relative min-h-[430px] max-h-[480px] flex items-center justify-center overflow-hidden shadow-whisper outline-none focus:outline-none"
             onMouseMove={(e) => {
               if (containerRef.current) {
                 const rect = containerRef.current.getBoundingClientRect();
@@ -438,7 +520,6 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
               }
             }}
             onMouseLeave={() => {
-              // Automatically zoom out to national view when pointer leaves map area
               setHoveredStateName(null);
               setIsCardVisible(false);
               setZoomTransform({ k: 1, x: 0, y: 0 });
@@ -451,7 +532,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
               ref={svgRef} 
               width={dimensions.width} 
               height={dimensions.height} 
-              className="w-full h-auto max-h-[600px] outline-none focus:outline-none"
+              className="w-full h-auto max-h-[460px] outline-none focus:outline-none"
               style={{ outline: 'none' }}
             >
               {/* Main Map Group with Smooth GPU Viewport Transform */}
@@ -467,7 +548,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                   const rawName = feat.properties.st_nm;
                   const stName = normalizeGeoStateName(rawName);
                   const stData = stateAggregates[stName] || stateAggregates[rawName];
-                  const val = stData ? (stData[selectedMetric] || 0) : 0;
+                  const val = stData ? (Number(stData[selectedMetric]) || 0) : 0;
                   const isHovered = hoveredStateName === stName || hoveredStateName === rawName;
                   const isFocused = zoomedState === stName || zoomedState === rawName;
                   const isDimmed = (hoveredStateName && !isHovered) || (zoomedState && !isFocused);
@@ -574,7 +655,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
             {hoveredData && (
               <div 
                 ref={cardRef}
-                className={`absolute z-30 pointer-events-none rounded-[12px] bg-white border border-[#ebebeb] p-4 shadow-[0_8px_24px_rgba(0,0,0,0.1)] w-72 text-left transition-opacity duration-200 text-[#171717] ${
+                className={`absolute z-30 pointer-events-none rounded-[12px] bg-white border border-[#ebebeb] p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.12)] w-72 text-left transition-opacity duration-200 text-[#171717] ${
                   isCardVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                 }`}
                 style={{
@@ -584,50 +665,50 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                 }}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-[#ebebeb] pb-2 mb-2.5">
-                  <h4 className="font-semibold text-sm text-[#171717] flex items-center gap-1.5">
+                <div className="flex items-center justify-between border-b border-[#ebebeb] pb-2 mb-2">
+                  <h4 className="font-bold text-sm text-[#171717] flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-[#0070f3]" />
                     {hoveredData.stateName}
                   </h4>
-                  <span className="mono-eyebrow text-[9px] bg-[#171717] text-white px-2 py-0.5 rounded-[4px]">
+                  <span className="mono-eyebrow text-[9px] bg-[#0070f3] text-white px-2 py-0.5 rounded-[4px] font-semibold">
                     CLICK TO FILTER
                   </span>
                 </div>
 
-                {/* Primary Telemetry: Total Projects & Total Investment */}
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between items-center bg-[#fafafa] p-2 rounded-[6px] border border-[#ebebeb]">
+                {/* Primary Telemetry */}
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center bg-[#fafafa] p-1.5 rounded-[6px] border border-[#ebebeb]">
                     <span className="font-medium text-[#4d4d4d] text-[11px]">Total Projects:</span>
-                    <span className="font-bold font-mono text-[#171717] text-sm">
+                    <span className="font-bold font-mono text-[#171717] text-xs">
                       <CardCountTween value={hoveredData.totalProjects} /> Projects
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center bg-[#fafafa] p-2 rounded-[6px] border border-[#ebebeb]">
-                    <span className="font-medium text-[#4d4d4d] text-[11px]">Total Amount (Latest):</span>
-                    <span className="font-bold font-mono text-[#0070f3] text-sm">
-                      <CardCountTween value={hoveredData.totalCost} prefix="₹ " suffix=" Cr" />
+                  <div className="flex justify-between items-center bg-[#fafafa] p-1.5 rounded-[6px] border border-[#ebebeb]">
+                    <span className="font-medium text-[#4d4d4d] text-[11px]">Total Sanctioned Capex:</span>
+                    <span className="font-bold font-mono text-[#0070f3] text-xs">
+                      {formatStateCost(hoveredData.totalCost)}
                     </span>
                   </div>
 
                   {/* Explicit On-Time vs Delayed Split Cards */}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <div className="p-2 rounded-[6px] bg-[#f0fdf4] border border-[#bbf7d0] flex flex-col justify-between">
+                  <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                    <div className="p-1.5 rounded-[6px] bg-[#f0fdf4] border border-[#bbf7d0] flex flex-col justify-between">
                       <div className="flex items-center gap-1 text-emerald-800 text-[10px] font-semibold">
                         <CheckCircle className="w-3 h-3 text-emerald-600" />
                         <span>On-Time</span>
                       </div>
-                      <strong className="text-emerald-700 font-mono text-base mt-1">
+                      <strong className="text-emerald-700 font-mono text-sm mt-0.5">
                         <CardCountTween value={hoveredData.onTime !== undefined ? hoveredData.onTime : (hoveredData.totalProjects - hoveredData.delayed)} />
                       </strong>
                     </div>
 
-                    <div className="p-2 rounded-[6px] bg-[#fffbeb] border border-[#fde68a] flex flex-col justify-between">
+                    <div className="p-1.5 rounded-[6px] bg-[#fffbeb] border border-[#fde68a] flex flex-col justify-between">
                       <div className="flex items-center gap-1 text-amber-800 text-[10px] font-semibold">
                         <Clock className="w-3 h-3 text-amber-600" />
                         <span>Delayed</span>
                       </div>
-                      <strong className="text-amber-700 font-mono text-base mt-1">
+                      <strong className="text-amber-700 font-mono text-sm mt-0.5">
                         <CardCountTween value={hoveredData.delayed} />
                       </strong>
                     </div>
@@ -635,7 +716,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
 
                   {hoveredData.highRisk > 0 && (
                     <div className="flex items-center justify-between px-2 py-1 rounded-[4px] bg-[#fff0f0] border border-[#ffd5d5] text-[10px] text-rose-700 font-mono">
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 font-medium">
                         <AlertTriangle className="w-3 h-3 text-rose-600" />
                         Critical / High Risk:
                       </span>
@@ -647,43 +728,86 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
               </div>
             )}
 
-            {/* Vertical Heatmap Legend */}
-            <div className={`absolute bottom-4 left-4 p-2.5 rounded-[8px] bg-white border border-[#ebebeb] text-xs shadow-whisper space-y-1.5 transition-opacity duration-500 ${isEntranceDone ? 'opacity-100' : 'opacity-0'}`}>
-              <span className="mono-eyebrow text-[9px] text-[#8f8f8f] block">
-                Project Density Scale
+            {/* Dynamic Metric Heatmap Legend */}
+            <div className={`absolute bottom-3 left-3 p-2 rounded-[8px] bg-white/95 backdrop-blur-xs border border-[#ebebeb] text-xs shadow-whisper space-y-1 transition-opacity duration-500 ${isEntranceDone ? 'opacity-100' : 'opacity-0'}`}>
+              <span className="mono-eyebrow text-[9px] text-[#64748b] block font-semibold">
+                {activeMetricConfig.title} Scale
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-[#8f8f8f] font-mono">Low</span>
-                <div className="w-24 h-2 rounded-full bg-gradient-to-r from-[#d3e5ff] via-[#0070f3] to-[#171717] border border-[#ebebeb]"></div>
+                <div 
+                  className="w-20 h-2 rounded-full border border-[#ebebeb]"
+                  style={{ background: legendGradient }}
+                />
                 <span className="text-[10px] text-[#8f8f8f] font-mono">High</span>
               </div>
             </div>
 
           </div>
 
-          {/* RIGHT COLUMN: Top 5 States Ranking List */}
-          <div className="lg:col-span-4 space-y-4">
-            <div className={`rounded-[12px] bg-white p-5 border border-[#ebebeb] shadow-whisper transition-opacity duration-500 ${isEntranceDone ? 'opacity-100' : 'opacity-0'}`}>
+          {/* RIGHT COLUMN: Production State Rankings & Interactive Metric Controls */}
+          <div className="lg:col-span-5 xl:col-span-4 space-y-3">
+            <div className={`rounded-[12px] bg-white p-3.5 sm:p-4 border border-[#ebebeb] shadow-whisper transition-opacity duration-500 ${isEntranceDone ? 'opacity-100' : 'opacity-0'}`}>
               
-              <div className="flex items-center justify-between mb-3 border-b border-[#ebebeb] pb-2">
-                <h3 className="text-sm font-semibold text-[#171717] flex items-center gap-2 tracking-tight">
-                  <Info className="w-4 h-4 text-[#8f8f8f]" />
-                  Top 5 States Ranking
+              {/* Header with Title and States Count */}
+              <div className="flex items-center justify-between mb-2.5 border-b border-[#ebebeb] pb-2">
+                <h3 className="text-sm font-bold text-[#171717] flex items-center gap-1.5 tracking-tight">
+                  <BarChart3 className="w-4 h-4 text-[#0070f3]" />
+                  <span>State Performance Ranking</span>
                 </h3>
-                <span className="mono-eyebrow text-[10px] bg-[#f2f2f2] text-[#171717] px-2 py-0.5 rounded-[4px] border border-[#ebebeb]">
-                  Monitored Projects
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded-[4px] border border-slate-200 font-semibold">
+                  35 States &amp; UTs
                 </span>
               </div>
 
-              <p className="text-xs text-[#4d4d4d] mb-4 font-normal">
-                Hover to focus map region. Click any state row to view all matching projects.
-              </p>
+              {/* 4-Tab Interactive Metric Switcher */}
+              <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-lg mb-3">
+                {Object.values(METRIC_CONFIG).map((cfg) => {
+                  const isActive = selectedMetric === cfg.key;
+                  return (
+                    <button
+                      key={cfg.key}
+                      onClick={() => setSelectedMetric(cfg.key)}
+                      className={`py-1 px-1 rounded-md text-[11px] font-semibold transition-all text-center cursor-pointer ${
+                        isActive
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      {cfg.label}
+                    </button>
+                  );
+                })}
+              </div>
 
-              {/* Top 5 States Interactive Ranking List */}
-              <div className="space-y-2">
-                {top5States.map((stObj, idx) => {
+              {/* Ranked States Interactive List */}
+              <div className="space-y-1.5">
+                {displayStates.map((stObj, idx) => {
                   const isHovered = hoveredStateName === stObj.stateName;
                   const isFocused = zoomedState === stObj.stateName;
+                  const maxVal = Math.max(1, Number(rankedStates[0]?.[selectedMetric]) || 1);
+                  const currentVal = Number(stObj[selectedMetric]) || 0;
+                  const pct = Math.max(6, Math.min(100, Math.round((currentVal / maxVal) * 100)));
+
+                  // Formatted primary & secondary display strings based on active metric
+                  let primaryDisplay = '';
+                  let secondaryDisplay = '';
+
+                  if (selectedMetric === 'totalProjects') {
+                    primaryDisplay = `${stObj.totalProjects} Proj`;
+                    secondaryDisplay = `${formatStateCost(stObj.totalCost)} • ${stObj.delayed} Delayed`;
+                  } else if (selectedMetric === 'totalCost') {
+                    primaryDisplay = formatStateCost(stObj.totalCost);
+                    secondaryDisplay = `${stObj.totalProjects} Projects • ${stObj.delayed} Delayed`;
+                  } else if (selectedMetric === 'delayed') {
+                    primaryDisplay = `${stObj.delayed} Delayed`;
+                    const delayPct = ((stObj.delayed / Math.max(1, stObj.totalProjects)) * 100).toFixed(0);
+                    secondaryDisplay = `${delayPct}% of ${stObj.totalProjects} Projects`;
+                  } else if (selectedMetric === 'highRisk') {
+                    primaryDisplay = `${stObj.highRisk} Critical`;
+                    const riskPct = ((stObj.highRisk / Math.max(1, stObj.totalProjects)) * 100).toFixed(0);
+                    secondaryDisplay = `${riskPct}% of ${stObj.totalProjects} Projects`;
+                  }
 
                   return (
                     <div
@@ -693,49 +817,108 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                       onMouseEnter={() => {
                         setHoveredStateName(stObj.stateName);
                         setIsCardVisible(true);
+                        zoomToState(stObj.stateName);
                       }}
                       onMouseLeave={() => {
                         setHoveredStateName(null);
                         setIsCardVisible(false);
+                        zoomToState(null);
                       }}
                       onClick={(e) => handleStateClick(stObj.stateName, e)}
-                      className={`p-2.5 rounded-[8px] border transition-all duration-150 cursor-pointer flex items-center justify-between group focus:outline-none ${
+                      className={`p-2 rounded-[8px] border transition-all duration-150 cursor-pointer flex flex-col group focus:outline-none ${
                         isHovered || isFocused
-                          ? 'bg-[#fafafa] border-[#171717] shadow-xs -translate-y-0.5'
-                          : 'bg-[#ffffff] border-[#ebebeb] hover:border-[#d4d4d4] hover:bg-[#fafafa]'
+                          ? 'bg-[#f8fafc] border-[#0070f3] shadow-xs translate-x-0.5'
+                          : 'bg-white border-[#ebebeb] hover:border-[#cbd5e1] hover:bg-[#fafafa]'
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className={`w-5 h-5 rounded-[4px] flex items-center justify-center font-mono text-[11px] font-semibold ${
-                          isHovered || isFocused ? 'bg-[#171717] text-white' : 'bg-[#f2f2f2] text-[#171717]'
-                        }`}>
-                          {idx + 1}
-                        </span>
-                        <div>
-                          <p className={`text-xs font-semibold transition-colors ${
-                            isHovered || isFocused ? 'text-[#0070f3]' : 'text-[#171717]'
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-5 h-5 rounded-[4px] flex items-center justify-center font-mono text-[10px] font-bold ${
+                            idx === 0 
+                              ? 'bg-[#0f172a] text-amber-300' 
+                              : idx === 1 
+                                ? 'bg-slate-200 text-slate-800' 
+                                : idx === 2 
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-slate-100 text-slate-600'
                           }`}>
-                            {stObj.stateName}
-                          </p>
-                          <p className="text-[10px] text-[#8f8f8f] font-mono mt-0.5">
-                            {stObj.totalProjects} Projects • ₹{(stObj.totalCost / 1000).toFixed(1)}k Cr
-                          </p>
+                            #{idx + 1}
+                          </span>
+                          <div>
+                            <p className={`text-xs font-semibold leading-tight transition-colors ${
+                              isHovered || isFocused ? 'text-[#0070f3]' : 'text-[#0f172a]'
+                            }`}>
+                              {stObj.stateName}
+                            </p>
+                            <p className="text-[10px] text-[#64748b] font-mono leading-tight mt-0.5">
+                              {secondaryDisplay}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-right">
+                          <span className="text-xs font-bold font-mono text-[#0f172a]">
+                            {primaryDisplay}
+                          </span>
+                          <ArrowRight className={`w-3.5 h-3.5 transition-transform ${
+                            isHovered || isFocused ? 'translate-x-0.5 text-[#0070f3]' : 'text-slate-300 group-hover:text-slate-500'
+                          }`} />
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        {stObj.highRisk > 0 && (
-                          <span className="px-1.5 py-0.5 rounded-[4px] bg-[#fff0f0] text-[#ee0000] text-[9px] font-mono border border-[#ffd5d5] font-semibold">
-                            {stObj.highRisk} Risk
-                          </span>
-                        )}
-                        <ArrowRight className={`w-3.5 h-3.5 transition-transform ${
-                          isHovered || isFocused ? 'translate-x-0.5 text-[#0070f3]' : 'text-[#8f8f8f]'
-                        }`} />
+                      {/* Proportional metric indicator bar */}
+                      <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden mt-1.5">
+                        <div 
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{ 
+                            width: `${pct}%`,
+                            backgroundColor: activeMetricConfig.color
+                          }}
+                        />
                       </div>
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Toggle: Top 5 vs Top 10 */}
+              <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowTop10(prev => !prev)}
+                  className="text-[11px] font-semibold text-slate-600 hover:text-blue-600 transition-colors flex items-center gap-1 cursor-pointer py-0.5"
+                >
+                  <span>{showTop10 ? 'Show Top 5 States' : 'View Top 10 States'}</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${showTop10 ? 'rotate-180' : ''}`} />
+                </button>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  Live MoSPI Telemetry
+                </span>
+              </div>
+
+              {/* Dedicated National & Multi-State Infrastructure Banner */}
+              <div 
+                role="button"
+                aria-label="Filter Multi-State Projects"
+                onClick={() => handleStateClick('Multi-State')}
+                className="mt-2.5 p-2 rounded-[8px] bg-slate-50 hover:bg-blue-50/60 border border-dashed border-slate-200 hover:border-blue-300 transition-all cursor-pointer flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">
+                    ⚡
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-800 leading-tight">
+                      National &amp; Multi-State Corridors
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-mono leading-tight">
+                      {multiStateData.totalProjects} Inter-State Projects • {formatStateCost(multiStateData.totalCost)}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-semibold text-blue-600 group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                  View →
+                </span>
               </div>
 
             </div>
