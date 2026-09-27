@@ -197,9 +197,17 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
     return DEFAULT_STATE_AGGREGATES;
   }, [customStateData]);
 
-  // Geographic States only (exclude non-geographic Multi-State from spatial rankings)
+  // Geographic States only (safely normalizing stateName and excluding non-geographic Multi-State)
   const rankedStates = useMemo(() => {
     return Object.values(stateAggregates)
+      .map(s => {
+        const sName = s.stateName || s.name || s.state || '';
+        return {
+          ...s,
+          stateName: sName,
+          name: sName
+        };
+      })
       .filter(s => s.stateName && s.stateName !== 'Multi-State')
       .sort((a, b) => (Number(b[selectedMetric]) || 0) - (Number(a[selectedMetric]) || 0));
   }, [stateAggregates, selectedMetric]);
@@ -211,12 +219,13 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
 
   // Dedicated aggregate for Multi-State / National Corridors
   const multiStateData = useMemo(() => {
-    return stateAggregates['Multi-State'] || {
+    const ms = stateAggregates['Multi-State'] || {};
+    return {
       stateName: 'Multi-State',
-      totalProjects: 462,
-      totalCost: 320113,
-      delayed: 78,
-      highRisk: 120
+      totalProjects: Number(ms.totalProjects) || 462,
+      totalCost: Number(ms.totalCost) || 320113,
+      delayed: Number(ms.delayed) || 78,
+      highRisk: Number(ms.highRisk) || 120
     };
   }, [stateAggregates]);
 
@@ -257,7 +266,20 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
     };
     handleResize();
     window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Keyboard Escape listener to smoothly reset cinematic zoom
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && zoomedState) {
+        setZoomTransform({ k: 1, x: 0, y: 0 });
+        setZoomedState(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [zoomedState]);
 
   // Spring animation loop for floating info card gliding
   const updateCardPosition = useCallback(() => {
@@ -382,7 +404,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
     return centroids;
   }, [pathGenerator, projection]);
 
-  // Zoom specifically to a target state's bounding box
+  // Zoom specifically to a target state's bounding box with cinematic camera easing
   const zoomToState = useCallback((stateName) => {
     if (!stateName) {
       setZoomTransform({ k: 1, x: 0, y: 0 });
@@ -390,29 +412,31 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
       return;
     }
 
-    const bounds = stateBoundsMap[stateName];
+    const normName = normalizeGeoStateName(stateName);
+    const bounds = stateBoundsMap[normName] || stateBoundsMap[stateName];
     const canvasW = dimensions.width;
-    const canvasH = dimensions.height - 40;
+    const canvasH = dimensions.height - 24;
 
     if (bounds && canvasW && canvasH) {
-      const stateW = Math.max(bounds.x1 - bounds.x0, 15);
-      const stateH = Math.max(bounds.y1 - bounds.y0, 15);
+      const stateW = Math.max(bounds.x1 - bounds.x0, 20);
+      const stateH = Math.max(bounds.y1 - bounds.y0, 20);
       const centerX = (bounds.x0 + bounds.x1) / 2;
       const centerY = (bounds.y0 + bounds.y1) / 2;
 
-      const targetScale = Math.max(1.8, Math.min(6.5, 0.65 / Math.max(stateW / canvasW, stateH / canvasH)));
-      const targetX = canvasW / 2 - targetScale * centerX;
-      const targetY = canvasH / 2 - targetScale * centerY;
+      // Cinematic framing: leaves room for the state Dossier reveal HUD
+      const targetScale = Math.max(1.8, Math.min(5.2, 0.58 / Math.max(stateW / canvasW, stateH / canvasH)));
+      const targetX = (canvasW / 2) - targetScale * centerX;
+      const targetY = (canvasH / 2) - targetScale * centerY;
 
       setZoomTransform({ k: targetScale, x: targetX, y: targetY });
-      setZoomedState(stateName);
+      setZoomedState(normName);
     } else {
       setZoomTransform({ k: 2.2, x: 0, y: 0 });
-      setZoomedState(stateName);
+      setZoomedState(normName);
     }
   }, [stateBoundsMap, dimensions]);
 
-  // Handle State Click: Zoom map into state first, then redirect to projects after animation
+  // Handle State Click: Smooth movie-like zoom fly-in to reveal state dossier HUD
   const handleStateClick = useCallback((stateName, event) => {
     if (event) {
       event.stopPropagation();
@@ -427,16 +451,21 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
 
     const canonicalState = normalizeGeoStateName(stateName);
 
-    // 1. Smoothly zoom into the clicked state boundary
-    zoomToState(canonicalState);
+    // Multi-State has no geographic polygon, navigate directly
+    if (canonicalState === 'Multi-State') {
+      if (onSelectState) onSelectState('Multi-State');
+      return;
+    }
 
-    // 2. Transition immediately to state projects after smooth click feedback
-    setTimeout(() => {
-      if (onSelectState) {
-        onSelectState(canonicalState);
-      }
-    }, 220);
-  }, [zoomToState, onSelectState]);
+    // If clicking an already zoomed state, navigate to its project directory
+    if (zoomedState === canonicalState) {
+      if (onSelectState) onSelectState(canonicalState);
+      return;
+    }
+
+    // Smoothly fly camera into the clicked state boundary and reveal state dossier
+    zoomToState(canonicalState);
+  }, [zoomedState, zoomToState, onSelectState]);
 
   // Current Hovered Data Object for Floating Card
   const hoveredData = useMemo(() => {
@@ -520,10 +549,9 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
               }
             }}
             onMouseLeave={() => {
+              // Smoothly clear state hover on exit without disturbing camera zoom
               setHoveredStateName(null);
               setIsCardVisible(false);
-              setZoomTransform({ k: 1, x: 0, y: 0 });
-              setZoomedState(null);
             }}
           >
             
@@ -532,15 +560,24 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
               ref={svgRef} 
               width={dimensions.width} 
               height={dimensions.height} 
-              className="w-full h-auto max-h-[460px] outline-none focus:outline-none"
+              className="w-full h-auto max-h-[460px] outline-none focus:outline-none select-none"
               style={{ outline: 'none' }}
             >
-              {/* Main Map Group with Smooth GPU Viewport Transform */}
+              {/* Clickable Background Rect to Smoothly Reset Zoom when clicking outside */}
+              <rect 
+                width={dimensions.width} 
+                height={dimensions.height} 
+                fill="transparent" 
+                onClick={() => zoomToState(null)} 
+                style={{ cursor: zoomedState ? 'zoom-out' : 'default' }}
+              />
+
+              {/* Main Map Group with Buttery 850ms Cinematic GPU Viewport Transform */}
               <g
                 style={{
                   transform: `translate(${zoomTransform.x}px, ${zoomTransform.y}px) scale(${zoomTransform.k})`,
                   transformOrigin: '0 0',
-                  transition: getPrefersReducedMotion() ? 'none' : 'transform 1200ms cubic-bezier(0.16, 1, 0.3, 1)'
+                  transition: getPrefersReducedMotion() ? 'none' : 'transform 850ms cubic-bezier(0.16, 1, 0.3, 1)'
                 }}
               >
                 {/* State Polygon Paths */}
@@ -561,28 +598,33 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                       key={stName + '-' + idx}
                       d={pathGenerator ? pathGenerator(feat) : ''}
                       fill={fillColor}
-                      stroke={isHovered ? '#0070f3' : isFocused ? '#171717' : '#ffffff'}
-                      strokeWidth={isHovered ? 2.5 : isFocused ? 2 : 0.75}
-                      opacity={isDimmed ? (MOTION_TOKENS?.spotlightOpacity || 0.4) : 1}
+                      stroke={isFocused ? '#0070f3' : isHovered ? '#0070f3' : '#ffffff'}
+                      strokeWidth={isFocused ? 2.5 : isHovered ? 2 : 0.75}
+                      vectorEffect="non-scaling-stroke"
+                      opacity={isDimmed ? 0.22 : 1}
                       cursor="pointer"
                       role="button"
                       aria-label={`${stName}: ${val} ${selectedMetric}`}
-                      className="map-state-path transition-all duration-300 focus:outline-none focus:ring-0"
+                      className="transition-colors duration-200 focus:outline-none"
                       style={{
                         outline: 'none',
-                        transform: isHovered ? 'scale(1.025)' : 'scale(1)',
-                        transformBox: 'fill-box',
-                        transformOrigin: 'center',
-                        filter: isHovered ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.18))' : 'none',
+                        filter: isFocused 
+                          ? 'drop-shadow(0 0 16px rgba(0, 112, 243, 0.6))' 
+                          : isHovered 
+                            ? 'drop-shadow(0 0 10px rgba(0, 112, 243, 0.35))' 
+                            : 'none',
+                        transition: 'opacity 250ms ease, stroke 200ms ease, fill 250ms ease, filter 250ms ease',
                         transitionDelay: `${staggerDelay}ms`
                       }}
                       onMouseEnter={() => {
                         setHoveredStateName(stName);
-                        setIsCardVisible(true);
+                        if (!zoomedState || zoomedState !== stName) {
+                          setIsCardVisible(true);
+                        }
                       }}
-                      onFocus={() => {
-                        setHoveredStateName(stName);
-                        setIsCardVisible(true);
+                      onMouseLeave={() => {
+                        setHoveredStateName(null);
+                        setIsCardVisible(false);
                       }}
                       onClick={(e) => handleStateClick(stName, e)}
                     />
@@ -596,7 +638,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                   return (
                     <g key={'pulse-' + stName} pointerEvents="none" opacity={hoveredStateName ? 0 : 0.9} className="transition-opacity duration-300">
                       <circle cx={center[0]} cy={center[1]} r={4} fill="#ee0000" />
-                      <circle cx={center[0]} cy={center[1]} className="animate-risk-pulse" stroke="#ee0000" fill="none" />
+                      <circle cx={center[0]} cy={center[1]} className="animate-risk-pulse" stroke="#ee0000" fill="none" vectorEffect="non-scaling-stroke" />
                     </g>
                   );
                 })}
@@ -606,31 +648,39 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                   const pt = projection([ut.lng, ut.lat]);
                   if (!pt) return null;
                   const isHovered = hoveredStateName === ut.name;
-                  const isDimmed = (hoveredStateName && !isHovered) || (zoomedState && zoomedState !== ut.name);
+                  const isFocused = zoomedState === ut.name;
+                  const isDimmed = (hoveredStateName && !isHovered) || (zoomedState && !isFocused);
 
                   return (
                     <g key={ut.name} transform={`translate(${pt[0]}, ${pt[1]})`}>
                       <circle
                         r={isHovered ? 6 : 4}
-                        fill={isHovered ? '#0070f3' : '#171717'}
+                        fill={isHovered || isFocused ? '#0070f3' : '#171717'}
                         stroke="#ffffff"
                         strokeWidth={1.5}
+                        vectorEffect="non-scaling-stroke"
                         cursor="pointer"
                         role="button"
                         aria-label={`UT ${ut.name}`}
-                        opacity={isDimmed ? 0.4 : 1}
-                        className="transition-all duration-200 focus:outline-none focus:ring-0"
+                        opacity={isDimmed ? 0.3 : 1}
+                        className="transition-all duration-200 focus:outline-none"
                         style={{ outline: 'none' }}
                         onMouseEnter={() => {
                           setHoveredStateName(ut.name);
-                          setIsCardVisible(true);
+                          if (!zoomedState || zoomedState !== ut.name) {
+                            setIsCardVisible(true);
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredStateName(null);
+                          setIsCardVisible(false);
                         }}
                         onClick={(e) => handleStateClick(ut.name, e)}
                       />
                       <text
                         y={-8}
                         textAnchor="middle"
-                        className="text-[9px] font-mono font-medium fill-[#4d4d4d] pointer-events-none"
+                        className="text-[9px] font-mono font-medium fill-[#4d4d4d] pointer-events-none select-none"
                       >
                         {ut.name}
                       </text>
@@ -651,11 +701,119 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
               </g>
             </svg>
 
-            {/* Smooth Floating Info Card (Geist Spec) */}
-            {hoveredData && (
+            {/* CINEMATIC AWWWARDS-STYLE STATE DOSSIER REVEAL HUD */}
+            {zoomedState && (
+              <div 
+                className="absolute top-3 left-3 z-30 max-w-xs sm:max-w-sm rounded-[14px] bg-white/95 backdrop-blur-md border border-slate-200 p-4 shadow-[0_12px_36px_rgba(0,0,0,0.16)] transition-all duration-300 animate-in fade-in zoom-in-95"
+              >
+                <div className="flex items-start justify-between border-b border-slate-100 pb-2.5 mb-2.5">
+                  <div>
+                    <div className="flex items-center gap-1.5 mono-eyebrow text-[9px] font-bold text-[#0070f3]">
+                      <Sparkles className="w-3 h-3 text-[#0070f3]" />
+                      <span>CINEMATIC FOCUS // STATE DOSSIER</span>
+                    </div>
+                    <h3 className="text-base font-extrabold text-slate-900 tracking-tight mt-0.5">
+                      {zoomedState}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => zoomToState(null)}
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                    title="Reset camera to national view"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {(() => {
+                  const zData = stateAggregates[zoomedState] || {};
+                  const totalProj = Number(zData.totalProjects) || 0;
+                  const totalCost = Number(zData.totalCost) || 0;
+                  const delayed = Number(zData.delayed) || 0;
+                  const onTime = zData.onTime !== undefined ? Number(zData.onTime) : Math.max(0, totalProj - delayed);
+                  const highRisk = Number(zData.highRisk) || 0;
+
+                  return (
+                    <div className="space-y-2 text-xs">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                          <span className="text-[10px] text-slate-500 font-medium block">Total Projects</span>
+                          <strong className="text-sm font-bold font-mono text-slate-900">
+                            {totalProj} Projects
+                          </strong>
+                        </div>
+                        <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                          <span className="text-[10px] text-slate-500 font-medium block">Sanctioned Capex</span>
+                          <strong className="text-sm font-bold font-mono text-[#0070f3]">
+                            {formatStateCost(totalCost)}
+                          </strong>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="p-2 rounded-lg bg-emerald-50/70 border border-emerald-100">
+                          <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-800">
+                            <CheckCircle className="w-3 h-3 text-emerald-600" />
+                            <span>On-Time Pacing</span>
+                          </div>
+                          <strong className="text-sm font-bold font-mono text-emerald-800 mt-0.5 block">
+                            {onTime}
+                          </strong>
+                        </div>
+
+                        <div className="p-2 rounded-lg bg-amber-50/70 border border-amber-100">
+                          <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-800">
+                            <Clock className="w-3 h-3 text-amber-600" />
+                            <span>Delayed</span>
+                          </div>
+                          <strong className="text-sm font-bold font-mono text-amber-800 mt-0.5 block">
+                            {delayed}
+                          </strong>
+                        </div>
+                      </div>
+
+                      {highRisk > 0 && (
+                        <div className="px-2.5 py-1.5 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-between text-[11px] text-rose-700 font-mono">
+                          <span className="flex items-center gap-1.5 font-medium">
+                            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                            Critical Exposure:
+                          </span>
+                          <strong className="font-bold">{highRisk} Projects</strong>
+                        </div>
+                      )}
+
+                      <div className="pt-1 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onSelectState) onSelectState(zoomedState);
+                          }}
+                          className="flex-1 py-2 px-3 rounded-lg bg-[#0070f3] hover:bg-[#0051b3] text-white font-semibold text-xs transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                        >
+                          <span>Explore All {totalProj} Projects</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => zoomToState(null)}
+                          className="py-2 px-2.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 font-medium text-xs transition-colors cursor-pointer"
+                          title="Reset camera to national view"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* Smooth Floating Info Card (Only shown during non-zoomed hover exploration) */}
+            {hoveredData && (!zoomedState || zoomedState !== hoveredData.stateName) && (
               <div 
                 ref={cardRef}
-                className={`absolute z-30 pointer-events-none rounded-[12px] bg-white border border-[#ebebeb] p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.12)] w-72 text-left transition-opacity duration-200 text-[#171717] ${
+                className={`absolute z-30 pointer-events-none rounded-[12px] bg-white border border-[#ebebeb] p-3 shadow-[0_8px_24px_rgba(0,0,0,0.12)] w-68 text-left transition-opacity duration-200 text-[#171717] ${
                   isCardVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                 }`}
                 style={{
@@ -665,13 +823,13 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                 }}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-[#ebebeb] pb-2 mb-2">
+                <div className="flex items-center justify-between border-b border-[#ebebeb] pb-1.5 mb-2">
                   <h4 className="font-bold text-sm text-[#171717] flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-[#0070f3]" />
                     {hoveredData.stateName}
                   </h4>
                   <span className="mono-eyebrow text-[9px] bg-[#0070f3] text-white px-2 py-0.5 rounded-[4px] font-semibold">
-                    CLICK TO FILTER
+                    CLICK TO ZOOM
                   </span>
                 </div>
 
@@ -685,7 +843,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                   </div>
 
                   <div className="flex justify-between items-center bg-[#fafafa] p-1.5 rounded-[6px] border border-[#ebebeb]">
-                    <span className="font-medium text-[#4d4d4d] text-[11px]">Total Sanctioned Capex:</span>
+                    <span className="font-medium text-[#4d4d4d] text-[11px]">Total Capex:</span>
                     <span className="font-bold font-mono text-[#0070f3] text-xs">
                       {formatStateCost(hoveredData.totalCost)}
                     </span>
@@ -718,7 +876,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                     <div className="flex items-center justify-between px-2 py-1 rounded-[4px] bg-[#fff0f0] border border-[#ffd5d5] text-[10px] text-rose-700 font-mono">
                       <span className="flex items-center gap-1 font-medium">
                         <AlertTriangle className="w-3 h-3 text-rose-600" />
-                        Critical / High Risk:
+                        Critical:
                       </span>
                       <strong>{hoveredData.highRisk} Projects</strong>
                     </div>
@@ -794,45 +952,44 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                   let secondaryDisplay = '';
 
                   if (selectedMetric === 'totalProjects') {
-                    primaryDisplay = `${stObj.totalProjects} Proj`;
-                    secondaryDisplay = `${formatStateCost(stObj.totalCost)} • ${stObj.delayed} Delayed`;
+                    primaryDisplay = `${stObj.totalProjects.toLocaleString()} Projects`;
+                    secondaryDisplay = `${formatStateCost(stObj.totalCost)} Capex • ${stObj.delayed} Delayed`;
                   } else if (selectedMetric === 'totalCost') {
                     primaryDisplay = formatStateCost(stObj.totalCost);
                     secondaryDisplay = `${stObj.totalProjects} Projects • ${stObj.delayed} Delayed`;
                   } else if (selectedMetric === 'delayed') {
                     primaryDisplay = `${stObj.delayed} Delayed`;
                     const delayPct = ((stObj.delayed / Math.max(1, stObj.totalProjects)) * 100).toFixed(0);
-                    secondaryDisplay = `${delayPct}% of ${stObj.totalProjects} Projects`;
+                    secondaryDisplay = `${delayPct}% Delayed (${stObj.totalProjects - stObj.delayed} on time)`;
                   } else if (selectedMetric === 'highRisk') {
                     primaryDisplay = `${stObj.highRisk} Critical`;
                     const riskPct = ((stObj.highRisk / Math.max(1, stObj.totalProjects)) * 100).toFixed(0);
-                    secondaryDisplay = `${riskPct}% of ${stObj.totalProjects} Projects`;
+                    secondaryDisplay = `${riskPct}% of ${stObj.totalProjects} projects flagged`;
                   }
 
                   return (
                     <div
                       key={stObj.stateName}
                       role="button"
-                      aria-label={`Open ${stObj.stateName} projects`}
+                      tabIndex={0}
+                      aria-label={`Inspect ${stObj.stateName}`}
                       onMouseEnter={() => {
                         setHoveredStateName(stObj.stateName);
                         setIsCardVisible(true);
-                        zoomToState(stObj.stateName);
                       }}
                       onMouseLeave={() => {
                         setHoveredStateName(null);
                         setIsCardVisible(false);
-                        zoomToState(null);
                       }}
-                      onClick={(e) => handleStateClick(stObj.stateName, e)}
-                      className={`p-2 rounded-[8px] border transition-all duration-150 cursor-pointer flex flex-col group focus:outline-none ${
+                      onClick={() => handleStateClick(stObj.stateName)}
+                      className={`p-2.5 rounded-[10px] border transition-all duration-200 cursor-pointer flex flex-col group ${
                         isHovered || isFocused
-                          ? 'bg-[#f8fafc] border-[#0070f3] shadow-xs translate-x-0.5'
+                          ? 'bg-blue-50/50 border-[#0070f3] shadow-xs translate-x-1'
                           : 'bg-white border-[#ebebeb] hover:border-[#cbd5e1] hover:bg-[#fafafa]'
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2.5">
                           <span className={`w-5 h-5 rounded-[4px] flex items-center justify-center font-mono text-[10px] font-bold ${
                             idx === 0 
                               ? 'bg-[#0f172a] text-amber-300' 
@@ -845,11 +1002,18 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                             #{idx + 1}
                           </span>
                           <div>
-                            <p className={`text-xs font-semibold leading-tight transition-colors ${
-                              isHovered || isFocused ? 'text-[#0070f3]' : 'text-[#0f172a]'
-                            }`}>
-                              {stObj.stateName}
-                            </p>
+                            <div className="flex items-center gap-1.5">
+                              <p className={`text-xs font-bold leading-tight transition-colors ${
+                                isHovered || isFocused ? 'text-[#0070f3]' : 'text-[#0f172a]'
+                              }`}>
+                                {stObj.stateName}
+                              </p>
+                              {isFocused && (
+                                <span className="text-[9px] px-1 py-0.2 rounded bg-blue-100 text-blue-700 font-mono font-semibold">
+                                  ZOOMED
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[10px] text-[#64748b] font-mono leading-tight mt-0.5">
                               {secondaryDisplay}
                             </p>
@@ -867,9 +1031,9 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                       </div>
 
                       {/* Proportional metric indicator bar */}
-                      <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden mt-1.5">
+                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
                         <div 
-                          className="h-full rounded-full transition-all duration-300"
+                          className="h-full rounded-full transition-all duration-400 ease-out"
                           style={{ 
                             width: `${pct}%`,
                             backgroundColor: activeMetricConfig.color

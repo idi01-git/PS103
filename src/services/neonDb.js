@@ -286,6 +286,7 @@ export async function fetchStateSummariesFromNeon() {
     rows.forEach(r => {
       stateMap[r.state] = {
         name: r.state,
+        stateName: r.state,
         totalProjects: Number(r.total_projects) || 0,
         totalCost: Number(r.total_cost_cr) || 0,
         onTime: Number(r.on_time_projects) || 0,
