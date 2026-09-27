@@ -109,12 +109,18 @@ export default function HeroSection({ onExploreMap, onViewProjects, onExploreDas
 
       </div>
 
-      {/* Subtle Scroll Cue at the bottom of the 100vh viewport */}
-      <div className="hidden sm:flex relative z-10 justify-center pb-4 pointer-events-none select-none">
-        <div className="flex flex-col items-center gap-1 text-slate-400">
-          <span className="text-[10px] font-mono tracking-widest uppercase text-slate-400">Scroll</span>
-          <ChevronDown className="w-3.5 h-3.5 animate-bounce text-slate-400" />
-        </div>
+      {/* Interactive Scroll Cue at the bottom of the viewport */}
+      <div className="hidden sm:flex relative z-10 justify-center pb-4">
+        <button
+          type="button"
+          onClick={onExploreDashboard}
+          className="flex flex-col items-center gap-1 text-slate-400 hover:text-[#0052FF] transition-colors cursor-pointer group select-none p-1 rounded-lg"
+          title="Scroll down to National Portfolio Surveillance"
+          aria-label="Scroll down to dashboard"
+        >
+          <span className="text-[10px] font-mono tracking-widest uppercase text-slate-400 group-hover:text-[#0052FF] transition-colors">Scroll</span>
+          <ChevronDown className="w-3.5 h-3.5 animate-bounce text-slate-400 group-hover:text-[#0052FF] transition-colors" />
+        </button>
       </div>
 
     </section>

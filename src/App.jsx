@@ -7,7 +7,6 @@ import IndiaMap from './components/IndiaMap';
 import MinistryDirectory from './components/MinistryDirectory';
 import ProjectListing from './components/ProjectListing';
 import ProjectDetails from './components/ProjectDetails';
-import ReportDownloadModal from './components/ReportDownloadModal';
 import GovernancePrivacyModal from './components/GovernancePrivacyModal';
 import Footer from './components/Footer';
 import { DataProvider, useProjectData } from './context/DataContext';
@@ -20,8 +19,6 @@ function AppContent() {
   const [selectedProjectId, setSelectedProjectId] = useState('020100044');
   const [filterStatus, setFilterStatus] = useState('All');
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [reportTargetProject, setReportTargetProject] = useState(null);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [privacyModalMode, setPrivacyModalMode] = useState('privacy');
 
@@ -99,12 +96,6 @@ function AppContent() {
     ) || projects[0];
   }, [selectedProjectId, projects]);
 
-  const handleOpenReportModal = (projectObj) => {
-    const prj = projectObj || activeProject;
-    setReportTargetProject(prj);
-    setIsReportModalOpen(true);
-  };
-
   const handleGlobalSearch = (query) => {
     setGlobalSearchQuery(query);
     setActiveTab('projects');
@@ -116,15 +107,10 @@ function AppContent() {
     setIsPrivacyModalOpen(true);
   };
 
-  // Synchronize Tab Navigation with modal state
+  // Synchronize Tab Navigation
   const handleTabChange = (tabId) => {
-    if (tabId === 'reports') {
-      setReportTargetProject(activeProject);
-      setIsReportModalOpen(true);
-    } else {
-      setActiveTab(tabId);
-      scrollToTop();
-    }
+    setActiveTab(tabId);
+    scrollToTop();
   };
 
   return (
@@ -227,7 +213,6 @@ function AppContent() {
           <ProjectDetails
             projectId={selectedProjectId}
             onBack={() => handleTabChange('projects')}
-            onOpenReportModal={handleOpenReportModal}
           />
         )}
 
@@ -236,19 +221,10 @@ function AppContent() {
           <ProjectDetails
             projectId={selectedProjectId}
             onBack={() => handleTabChange('projects')}
-            onOpenReportModal={handleOpenReportModal}
           />
         )}
 
       </main>
-
-      {/* Report Download Modal */}
-      <ReportDownloadModal
-        isOpen={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-        project={reportTargetProject || activeProject}
-        selectedState={selectedState}
-      />
 
       {/* Governance & Privacy Protocol Modal */}
       <GovernancePrivacyModal

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProjectData } from '../context/DataContext';
 
 export function AnimatedCounter({ value, duration = 1500, prefix = "", suffix = "" }) {
@@ -100,13 +100,6 @@ function RailwaysSvg() {
 
 export default function StatsOverview({ stats, onFilterClick, onSelectProject }) {
   const carouselRef = useRef(null);
-  const sectionRef = useRef(null);
-  const targetScrollRef = useRef(0);
-  const currentScrollRef = useRef(0);
-  const isDraggingRef = useRef(false);
-  const dragStartXRef = useRef(0);
-  const dragStartScrollRef = useRef(0);
-  const animFrameRef = useRef(null);
 
   const { projects: dbProjects } = useProjectData();
 
@@ -170,74 +163,20 @@ export default function StatsOverview({ stats, onFilterClick, onSelectProject })
       });
   }, [dbProjects]);
 
-  // Smooth Gliding Animation Loop (60fps lerp)
-  useEffect(() => {
-    const updateScroll = () => {
-      if (carouselRef.current) {
-        const diff = targetScrollRef.current - currentScrollRef.current;
-        if (Math.abs(diff) > 0.4) {
-          currentScrollRef.current += diff * 0.08; // Fluid easing factor
-          carouselRef.current.scrollLeft = currentScrollRef.current;
-        }
-      }
-      animFrameRef.current = requestAnimationFrame(updateScroll);
-    };
-
-    animFrameRef.current = requestAnimationFrame(updateScroll);
-    return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    };
-  }, []);
-
-  // Default Center Scroll Alignment on Mount
-  useEffect(() => {
+  const handleScrollLeft = () => {
     if (carouselRef.current) {
-      const el = carouselRef.current;
-      const maxScroll = el.scrollWidth - el.clientWidth;
-      const initialCenter = maxScroll / 2;
-      targetScrollRef.current = initialCenter;
-      currentScrollRef.current = initialCenter;
-      el.scrollLeft = initialCenter;
-    }
-  }, []);
-
-  // Mouse Pointer Motion Tracking (Cards slide smoothly as mouse glides left/right)
-  const handleSectionMouseMove = (e) => {
-    if (isDraggingRef.current || !carouselRef.current || !sectionRef.current) return;
-    const rect = sectionRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const ratio = Math.max(0, Math.min(1, mouseX / rect.width));
-
-    const maxScroll = carouselRef.current.scrollWidth - carouselRef.current.clientWidth;
-    targetScrollRef.current = ratio * maxScroll;
-  };
-
-  // Mouse Drag Handlers
-  const handleMouseDown = (e) => {
-    isDraggingRef.current = true;
-    dragStartXRef.current = e.clientX;
-    if (carouselRef.current) {
-      dragStartScrollRef.current = carouselRef.current.scrollLeft;
-      currentScrollRef.current = carouselRef.current.scrollLeft;
-      targetScrollRef.current = carouselRef.current.scrollLeft;
+      carouselRef.current.scrollBy({ left: -360, behavior: 'smooth' });
     }
   };
 
-  const handleMouseUpOrLeave = () => {
-    isDraggingRef.current = false;
-  };
-
-  const handleDragMouseMove = (e) => {
-    if (!isDraggingRef.current || !carouselRef.current) return;
-    e.preventDefault();
-    const deltaX = (e.clientX - dragStartXRef.current) * 1.6;
-    const maxScroll = carouselRef.current.scrollWidth - carouselRef.current.clientWidth;
-    const newScroll = dragStartScrollRef.current - deltaX;
-    targetScrollRef.current = Math.max(0, Math.min(maxScroll, newScroll));
+  const handleScrollRight = () => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollBy({ left: 360, behavior: 'smooth' });
+    }
   };
 
   return (
-    <div className="space-y-0 select-none">
+    <div className="space-y-0">
       
       {/* SECTION A: Minimal Premium Editorial Overview */}
       <section className="pt-20 sm:pt-28 pb-16 sm:pb-20 bg-white border-b border-[#ebebeb]">
@@ -317,21 +256,13 @@ export default function StatsOverview({ stats, onFilterClick, onSelectProject })
         </div>
       </section>
 
-      {/* SECTION B: High Value Projects Interactive Mouse-Tracking Slider */}
+      {/* SECTION B: High Value Projects Interactive Slider */}
       <section 
-        ref={sectionRef}
-        onMouseMove={(e) => {
-          handleSectionMouseMove(e);
-          handleDragMouseMove(e);
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUpOrLeave}
-        onMouseLeave={handleMouseUpOrLeave}
-        className="py-12 sm:py-16 bg-[#fafafa] border-b border-[#ebebeb] relative overflow-hidden cursor-grab active:cursor-grabbing"
+        className="py-12 sm:py-16 bg-[#fafafa] border-b border-[#ebebeb] relative overflow-hidden"
       >
         <div className="max-w-7xl mx-auto relative z-10">
           
-          {/* Header Row */}
+          {/* Header Row with Navigation Controls */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 px-4 sm:px-6 gap-3">
             <div>
               <div className="mono-eyebrow text-[#8f8f8f] mb-1">
@@ -341,17 +272,35 @@ export default function StatsOverview({ stats, onFilterClick, onSelectProject })
                 High Value Projects
               </h2>
             </div>
-            <p className="text-xs text-[#8f8f8f] font-mono flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#0070f3]" />
-              Glide cursor horizontally to scroll portfolio
-            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#8f8f8f] font-mono mr-1 hidden sm:inline">
+                Explore portfolio
+              </span>
+              <button
+                type="button"
+                onClick={handleScrollLeft}
+                className="w-8 h-8 rounded-[6px] bg-white hover:bg-[#171717] hover:text-white text-[#171717] border border-[#ebebeb] flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                title="Scroll Left"
+                aria-label="Scroll Left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleScrollRight}
+                className="w-8 h-8 rounded-[6px] bg-white hover:bg-[#171717] hover:text-white text-[#171717] border border-[#ebebeb] flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                title="Scroll Right"
+                aria-label="Scroll Right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* High Value Projects Slider */}
           <div 
             ref={carouselRef}
-            className="flex gap-5 overflow-x-auto scrollbar-none pb-6 pt-2 px-4 sm:px-6 lg:px-8"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            className="flex gap-5 overflow-x-auto custom-scrollbar pb-6 pt-2 px-4 sm:px-6 lg:px-8 scroll-smooth"
           >
             {highValueProjects.map((card) => {
               const IconComp = card.IconComponent;

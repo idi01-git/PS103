@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
+
 @layer base {
   body {
     background-color: #fafafa;
@@ -19,20 +25,43 @@
   }
 }
 
-/* Custom Minimalist Scrollbar */
+/* Accessible, High-Contrast Scrollbar (Easy to see and drag on all devices) */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #fafafa;
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #ebebeb;
-  border-radius: 9999px;
+  background: #94a3b8;
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #d4d4d4;
+  background: #64748b;
+}
+
+/* Utility for horizontal and nested scroll containers */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  border: 1px solid #f1f5f9;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Geist Typography Utilities */

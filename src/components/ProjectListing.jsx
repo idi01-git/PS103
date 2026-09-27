@@ -420,7 +420,7 @@ export default function ProjectListing({
             </div>
 
             {/* Execution Status Pills (4 Cols) */}
-            <div className="md:col-span-4 flex items-center justify-start md:justify-end gap-1 overflow-x-auto no-scrollbar py-0.5">
+            <div className="md:col-span-4 flex items-center justify-start md:justify-end gap-1 overflow-x-auto custom-scrollbar py-0.5">
               {[
                 { id: 'All', label: 'All' },
                 { id: 'Ongoing', label: 'Ongoing' },
@@ -730,7 +730,7 @@ export default function ProjectListing({
         {viewMode === 'table' && (
           <div className="space-y-4">
             <div className="rounded-[12px] bg-white border border-[#ebebeb] overflow-hidden shadow-whisper">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full text-left text-xs text-[#171717] min-w-[1100px]">
                   <thead className="bg-[#fafafa] text-[#8f8f8f] font-mono uppercase text-[10px] border-b border-[#ebebeb]">
                     <tr>

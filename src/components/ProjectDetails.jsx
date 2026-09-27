@@ -36,7 +36,6 @@ import {
   BarChart3, 
   TrendingUp,
   Info,
-  Download,
   ExternalLink,
   ChevronRight,
   ShieldCheck,
@@ -48,7 +47,7 @@ import {
 
 import { useProjectData } from '../context/DataContext';
 
-export default function ProjectDetails({ projectId, onBack, onOpenReportModal }) {
+export default function ProjectDetails({ projectId, onBack }) {
   const { getProjectById, projects, isLiveConnected } = useProjectData();
   const initialProject = projects?.find(p => p.id === projectId || p.rawId === String(projectId)) || PROJECTS_MASTER[0];
   const [project, setProject] = useState(initialProject);
@@ -116,18 +115,6 @@ export default function ProjectDetails({ projectId, onBack, onOpenReportModal })
               {project.id}
             </span>
           </div>
-
-          {/* Export option commented out
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => onOpenReportModal && onOpenReportModal(project)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#171717] hover:bg-[#333333] text-white text-xs font-medium shadow-xs transition-all cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download Intelligence Report</span>
-            </button>
-          </div>
-          */}
         </div>
 
         {/* ==================================================== */}
@@ -244,7 +231,7 @@ export default function ProjectDetails({ projectId, onBack, onOpenReportModal })
         {/* 3. STICKY DOCKED TAB NAVIGATION BAR (PROFESSIONAL UX) */}
         {/* ==================================================== */}
         <div className="sticky top-14 z-30 bg-[#fafafa]/90 backdrop-blur-md py-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 border-y border-[#ebebeb]/80 transition-all">
-          <div className="max-w-7xl mx-auto p-1 rounded-xl bg-[#f1f5f9] border border-[#e2e8f0] flex items-center gap-1 overflow-x-auto no-scrollbar shadow-xs">
+          <div className="max-w-7xl mx-auto p-1 rounded-xl bg-[#f1f5f9] border border-[#e2e8f0] flex items-center gap-1 overflow-x-auto custom-scrollbar shadow-xs">
             {tabs.map((t) => {
               const Icon = t.icon;
               const isActive = activeTab === t.id;

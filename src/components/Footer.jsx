@@ -61,13 +61,6 @@ export default function Footer({ onNavigate, onSelectMinistry, onOpenPrivacy }) 
                   Risk &amp; AI Analysis
                 </button>
               </li>
-              {/* Export option commented out
-              <li>
-                <button onClick={() => onNavigate && onNavigate('reports')} className="text-[#4d4d4d] hover:text-[#171717] transition-colors cursor-pointer">
-                  Intelligence Export Dossiers
-                </button>
-              </li>
-              */}
             </ul>
           </div>
 
