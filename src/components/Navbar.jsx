@@ -1,18 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   BarChart3, 
   MapPin, 
-  FileText, 
   Search, 
   Menu, 
   X,
   Layers,
-  Sparkles
+  Sparkles,
+  Building2
 } from 'lucide-react';
+import BrandLogo from './BrandLogo';
 
-export default function Navbar({ activeTab, setActiveTab, onSearch, selectedState, resetStateFilter }) {
+export default function Navbar({ 
+  activeTab, 
+  setActiveTab, 
+  onSearch, 
+  selectedState, 
+  resetStateFilter
+}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef(null);
+
+  // Global Keyboard Shortcut: '/' or '⌘K' / 'Ctrl+K' focuses search input, 'Escape' blurs
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const isTyping = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+
+      if ((e.key === '/' && !isTyping) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+
+      if (e.key === 'Escape' && document.activeElement === searchInputRef.current) {
+        searchInputRef.current?.blur();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -22,145 +50,169 @@ export default function Navbar({ activeTab, setActiveTab, onSearch, selectedStat
     setActiveTab('projects');
   };
 
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    if (onSearch) {
+      onSearch('');
+    }
+  };
+
+  // Strictly consistent single-word navigation items (1 word, 1 line, zero wrapping)
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'projects', label: 'Projects', icon: Layers, badge: selectedState ? selectedState : null },
-    { id: 'analysis', label: 'Risk & AI Analysis', icon: Sparkles },
-    { id: 'reports', label: 'Download Report', icon: FileText }
+    { id: 'projects', label: 'Projects', icon: Layers },
+    { id: 'ministries', label: 'Ministries', icon: Building2 },
+    { id: 'analysis', label: 'Analytics', icon: Sparkles }
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-[#fafafa]/90 backdrop-blur-md border-b border-[#ebebeb] transition-all">
-      {/* Main Navigation Bar */}
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#ebebeb] transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className="relative flex items-center justify-between h-14 gap-4">
           
-          {/* Logo & Brand */}
+          {/* ==================================================== */}
+          {/* 1. BRAND & IDENTITY                                  */}
+          {/* ==================================================== */}
           <div 
             onClick={() => setActiveTab('dashboard')} 
-            className="flex items-center gap-3 cursor-pointer group select-none"
+            className="cursor-pointer group select-none shrink-0"
+            title="PAIMANA - National Infrastructure Surveillance (MoSPI)"
           >
-            {/* Vercel-style stark black geometric triangle mark */}
-            <div className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-[#171717] text-white transition-transform group-hover:scale-105">
-              <svg className="w-4 h-4 text-white fill-current" viewBox="0 0 24 24">
-                <path d="M12 2L24 22H0L12 2Z" />
-              </svg>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="font-semibold text-lg tracking-[-0.6px] text-[#171717]">
-                DRISHTI
-              </span>
-              <span className="hidden sm:inline-block font-mono text-[11px] font-medium text-[#8f8f8f] uppercase tracking-wider">
-                PAIMANA v2.0
-              </span>
-            </div>
+            <BrandLogo size="md" showBadge={true} />
           </div>
 
-          {/* Quick Search Field (6px square, hairline border, Geist spec) */}
-          <form onSubmit={handleSearchSubmit} className="hidden md:flex flex-1 max-w-xs relative">
-            <input
-              type="text"
-              placeholder="Search projects, state, ministry..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white text-sm text-[#171717] placeholder-[#8f8f8f] rounded-[6px] pl-9 pr-8 py-1.5 border border-[#ebebeb] focus:outline-none focus:border-[#171717] focus:ring-1 focus:ring-[#171717] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
-            />
-            <Search className="w-4 h-4 text-[#8f8f8f] absolute left-2.5 top-2.5" />
-            <kbd className="hidden sm:inline-flex items-center absolute right-2 top-2 px-1.5 py-0.5 text-[10px] font-mono text-[#8f8f8f] bg-[#f2f2f2] border border-[#ebebeb] rounded-[4px]">
-              /
-            </kbd>
-          </form>
-
-          {/* Desktop Nav Items */}
-          <nav className="hidden lg:flex items-center space-x-1">
+          {/* ==================================================== */}
+          {/* 2. CENTER NAVIGATION (DEAD-CENTERED)                 */}
+          {/* ==================================================== */}
+          <nav className="hidden md:flex items-center gap-1.5 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
+
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-sm font-medium transition-all ${
+                  className={`h-8 px-3 rounded-[6px] text-xs font-medium tracking-tight whitespace-nowrap flex items-center justify-center gap-1.5 transition-all duration-150 cursor-pointer select-none ${
                     isActive 
                       ? 'bg-[#171717] text-white shadow-xs' 
-                      : 'text-[#4d4d4d] hover:text-[#171717] hover:bg-[#f2f2f2]'
+                      : 'text-[#666666] hover:text-[#171717] hover:bg-[#f5f5f5]'
                   }`}
                 >
                   <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#8f8f8f]'}`} />
                   <span>{item.label}</span>
-                  {item.badge && (
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
-                      isActive ? 'bg-[#333333] text-white' : 'bg-[#ebebeb] text-[#171717]'
-                    }`}>
-                      {item.badge}
-                    </span>
-                  )}
                 </button>
               );
             })}
           </nav>
 
-          {/* State Filter Indicator Pill (if state filter active) */}
-          {selectedState && (
-            <div className="hidden sm:flex items-center gap-1.5 bg-[#ffffff] border border-[#ebebeb] text-[#171717] px-2.5 py-1 rounded-[100px] text-xs shadow-whisper">
-              <MapPin className="w-3 h-3 text-[#0070f3]" />
-              <span className="font-mono text-[11px]">State: <strong>{selectedState}</strong></span>
-              <button 
-                onClick={resetStateFilter} 
-                className="hover:text-black hover:bg-[#f2f2f2] rounded-full p-0.5 ml-1 transition-colors"
-                title="Clear State Filter"
+          {/* ==================================================== */}
+          {/* 3. RIGHT UTILITIES & ACTION CHROME (EQUAL HEIGHT 32px) */}
+          {/* ==================================================== */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            
+            {/* Quick Search Input (Exact h-8 / 32px alignment) */}
+            <form onSubmit={handleSearchSubmit} className="hidden sm:flex relative items-center">
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 w-36 md:w-44 lg:w-48 focus:w-56 bg-[#fafafa] focus:bg-white text-xs text-[#171717] placeholder-[#8f8f8f] rounded-[6px] pl-8 pr-8 border border-[#ebebeb] focus:outline-none focus:border-[#171717] transition-all duration-200"
+              />
+              <Search className="w-3.5 h-3.5 text-[#8f8f8f] absolute left-2.5 pointer-events-none" />
+              
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="absolute right-2 text-[#8f8f8f] hover:text-[#171717] p-0.5 cursor-pointer flex items-center justify-center"
+                  title="Clear"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              ) : (
+                <kbd className="hidden lg:inline-flex items-center absolute right-2 px-1 py-0.2 text-[9px] font-mono text-[#8f8f8f] bg-[#f2f2f2] border border-[#ebebeb] rounded pointer-events-none select-none">
+                  /
+                </kbd>
+              )}
+            </form>
+
+            {/* State Filter Indicator Pill (Exact h-8 alignment) */}
+            {selectedState && (
+              <div className="h-8 flex items-center gap-1.5 bg-[#eff6ff] border border-[#bfdbfe] text-[#0070f3] pl-2.5 pr-1.5 rounded-full text-xs shrink-0 select-none">
+                <MapPin className="w-3 h-3 text-[#0070f3] shrink-0" />
+                <span className="font-mono text-[11px] font-semibold truncate max-w-[80px] sm:max-w-[120px]">
+                  {selectedState}
+                </span>
+                <button 
+                  onClick={resetStateFilter} 
+                  className="hover:text-rose-600 hover:bg-[#dbeafe] rounded-full p-0.5 cursor-pointer flex items-center justify-center"
+                  title="Clear State Filter"
+                >
+                  <X className="w-3 h-3 text-[#0070f3]" />
+                </button>
+              </div>
+            )}
+
+
+
+            {/* Mobile Menu Toggle Button (Exact h-8 / 32px alignment) */}
+            <div className="md:hidden flex items-center">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="h-8 w-8 rounded-[6px] bg-white border border-[#ebebeb] text-[#171717] hover:bg-[#f5f5f5] flex items-center justify-center cursor-pointer transition-colors"
+                aria-label="Toggle Navigation"
               >
-                <X className="w-3 h-3 text-[#8f8f8f]" />
+                {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
               </button>
             </div>
-          )}
 
-          {/* Right Action Chrome: 6px square buttons per Geist nav spec */}
-          <div className="hidden sm:flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('reports')}
-              className="btn-app-ghost text-xs font-medium"
-            >
-              Export Data
-            </button>
-            <button
-              onClick={() => setActiveTab('projects')}
-              className="btn-app-sm bg-[#171717] hover:bg-[#333333] text-white text-xs font-medium"
-            >
-              Explore
-            </button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="lg:hidden flex items-center gap-2">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 rounded-[6px] bg-white border border-[#ebebeb] text-[#171717] hover:bg-[#f2f2f2]"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* ==================================================== */}
+      {/* MOBILE EXPANDED DRAWER                               */}
+      {/* ==================================================== */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-[#ebebeb] bg-[#fafafa] px-4 pt-3 pb-6 space-y-3">
+        <div className="md:hidden border-t border-[#ebebeb] bg-white px-4 pt-3 pb-5 space-y-3">
+          
+          {/* Mobile Search */}
           <form onSubmit={handleSearchSubmit} className="relative">
             <input
               type="text"
-              placeholder="Search projects..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white text-sm text-[#171717] placeholder-[#8f8f8f] rounded-[6px] pl-9 pr-3 py-2 border border-[#ebebeb] focus:outline-none focus:border-[#171717]"
+              className="h-9 w-full bg-[#fafafa] text-xs text-[#171717] placeholder-[#8f8f8f] rounded-[6px] pl-8 pr-3 border border-[#ebebeb] focus:outline-none focus:border-[#171717]"
             />
-            <Search className="w-4 h-4 text-[#8f8f8f] absolute left-3 top-3" />
+            <Search className="w-3.5 h-3.5 text-[#8f8f8f] absolute left-2.5 top-3" />
           </form>
 
+          {/* Active State in Mobile */}
+          {selectedState && (
+            <div className="flex items-center justify-between p-2 rounded-[6px] bg-[#eff6ff] border border-[#bfdbfe] text-xs text-[#0070f3]">
+              <div className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-[#0070f3]" />
+                <span className="font-mono text-[11px]">State Filter: <strong>{selectedState}</strong></span>
+              </div>
+              <button 
+                onClick={resetStateFilter} 
+                className="text-xs text-rose-600 hover:underline font-mono"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+
+          {/* Nav Items List */}
           <div className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
+
               return (
                 <button
                   key={item.id}
@@ -168,10 +220,10 @@ export default function Navbar({ activeTab, setActiveTab, onSearch, selectedStat
                     setActiveTab(item.id);
                     setMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[6px] text-sm font-medium transition-all ${
+                  className={`h-9 w-full flex items-center gap-2.5 px-3 rounded-[6px] text-xs font-medium transition-all ${
                     isActive 
                       ? 'bg-[#171717] text-white' 
-                      : 'text-[#4d4d4d] hover:bg-[#f2f2f2] hover:text-[#171717]'
+                      : 'text-[#666666] hover:bg-[#f5f5f5] hover:text-[#171717]'
                   }`}
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#8f8f8f]'}`} />
@@ -179,10 +231,10 @@ export default function Navbar({ activeTab, setActiveTab, onSearch, selectedStat
                 </button>
               );
             })}
+
           </div>
         </div>
       )}
     </header>
   );
 }
-

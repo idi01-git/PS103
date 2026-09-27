@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { ArrowRight } from 'lucide-react';
+import { useProjectData } from '../context/DataContext';
 
 export function AnimatedCounter({ value, duration = 1500, prefix = "", suffix = "" }) {
   const [count, setCount] = useState(0);
@@ -96,7 +98,7 @@ function RailwaysSvg() {
   );
 }
 
-export default function StatsOverview({ stats, onFilterClick }) {
+export default function StatsOverview({ stats, onFilterClick, onSelectProject }) {
   const carouselRef = useRef(null);
   const sectionRef = useRef(null);
   const targetScrollRef = useRef(0);
@@ -105,6 +107,68 @@ export default function StatsOverview({ stats, onFilterClick }) {
   const dragStartXRef = useRef(0);
   const dragStartScrollRef = useRef(0);
   const animFrameRef = useRef(null);
+
+  const { projects: dbProjects } = useProjectData();
+
+  // Helper to map dynamic sector to custom SVGs
+  const getSectorIcon = (sector, ministry) => {
+    const s = `${sector || ''} ${ministry || ''}`.toLowerCase();
+    if (s.includes('road') || s.includes('highway') || s.includes('expressway') || s.includes('morth')) return HighwaysSvg;
+    if (s.includes('rail') || s.includes('train') || s.includes('metro') || s.includes('transit')) return RailwaysSvg;
+    if (s.includes('water') || s.includes('river') || s.includes('iwai') || s.includes('jal')) return WaterwaysSvg;
+    if (s.includes('health') || s.includes('hospital') || s.includes('pmssy')) return HealthcareSvg;
+    if (s.includes('port') || s.includes('ship') || s.includes('maritime') || s.includes('dock')) return ShippingSvg;
+    if (s.includes('mine') || s.includes('metal') || s.includes('steel') || s.includes('coal') || s.includes('nalco')) return MetalsMiningSvg;
+    return HighwaysSvg;
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'TBD';
+    if (dateStr.includes('/')) return dateStr;
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+      }
+    } catch (e) {
+      // fallback
+    }
+    return dateStr;
+  };
+
+  // Top 5 most valuable projects by cost dynamically fetched from database
+  const highValueProjects = useMemo(() => {
+    const list = (dbProjects && dbProjects.length > 0) ? dbProjects : [];
+    if (list.length === 0) return [];
+
+    return [...list]
+      .sort((a, b) => {
+        const costA = Math.max(Number(a.currentCost) || 0, Number(a.approvedCost) || 0, Number(a.estimatedCost) || 0);
+        const costB = Math.max(Number(b.currentCost) || 0, Number(b.approvedCost) || 0, Number(b.estimatedCost) || 0);
+        return costB - costA;
+      })
+      .slice(0, 5)
+      .map(p => {
+        const origCost = Number(p.approvedCost || p.estimatedCost || 0);
+        const currCost = Number(p.currentCost || p.approvedCost || origCost || 0);
+        return {
+          id: p.id || `OCMS-${p.rawId}`,
+          rawId: p.rawId || p.id,
+          sector: p.sector || 'Infrastructure & Logistics',
+          authority: p.agency || p.department || p.ministry || 'Centrally Monitored CPSU',
+          projectName: p.name || p.shortName || 'National Mega Project',
+          originalCost: origCost ? origCost.toLocaleString() : 'N/A',
+          physicalProgress: p.progressPercent !== undefined ? Math.round(Number(p.progressPercent)) : 0,
+          latestRevisedCost: currCost ? currCost.toLocaleString() : 'N/A',
+          latestRevisedDate: formatDate(p.targetCompletion || p.expectedCompletion),
+          filterStatus: p.status || (p.timeDelayMonths > 0 ? 'Delayed' : 'Ongoing'),
+          IconComponent: getSectorIcon(p.sector, p.ministry)
+        };
+      });
+  }, [dbProjects]);
 
   // Smooth Gliding Animation Loop (60fps lerp)
   useEffect(() => {
@@ -172,82 +236,6 @@ export default function StatsOverview({ stats, onFilterClick }) {
     targetScrollRef.current = Math.max(0, Math.min(maxScroll, newScroll));
   };
 
-  // High Value Projects Data (Exact MoSPI Portal Structure)
-  const highValueProjects = [
-    {
-      id: 'hvp-1',
-      sector: "Inland Waterways",
-      authority: "Inland Waterways Authority of India [IWAI]",
-      projectName: "Jal Marg Vikas Project",
-      originalCost: "5,369",
-      physicalProgress: "85",
-      latestRevisedCost: "5,061",
-      latestRevisedDate: "24/10/2026",
-      IconComponent: WaterwaysSvg,
-      filterStatus: 'Ongoing'
-    },
-    {
-      id: 'hvp-2',
-      sector: "Healthcare",
-      authority: "PMSSY AND Institute of NATIONAL Importance",
-      projectName: "Redevelopment of Residential...",
-      originalCost: "4,441",
-      physicalProgress: "57",
-      latestRevisedCost: "4,441",
-      latestRevisedDate: "02/06/2027",
-      IconComponent: HealthcareSvg,
-      filterStatus: 'Ongoing'
-    },
-    {
-      id: 'hvp-3',
-      sector: "Shipping",
-      authority: "Deendayal Port Trust",
-      projectName: "Development of Container Ter...",
-      originalCost: "4,244",
-      physicalProgress: "60",
-      latestRevisedCost: "4,244",
-      latestRevisedDate: "30/09/2027",
-      IconComponent: ShippingSvg,
-      filterStatus: 'Ongoing'
-    },
-    {
-      id: 'hvp-4',
-      sector: "Metals & Mining",
-      authority: "National Aluminium Company Limited [NALCO]",
-      projectName: "Expansion of Alumina Refiner...",
-      originalCost: "4,103",
-      physicalProgress: "96",
-      latestRevisedCost: "5,677",
-      latestRevisedDate: "30/06/2026",
-      IconComponent: MetalsMiningSvg,
-      filterStatus: 'Completed'
-    },
-    {
-      id: 'hvp-5',
-      sector: "Road Transport & Highways",
-      authority: "National Highways Authority of India [NHAI]",
-      projectName: "Delhi-Mumbai Expressway Corridor...",
-      originalCost: "8,720",
-      physicalProgress: "78",
-      latestRevisedCost: "9,150",
-      latestRevisedDate: "15/12/2026",
-      IconComponent: HighwaysSvg,
-      filterStatus: 'Ongoing'
-    },
-    {
-      id: 'hvp-6',
-      sector: "Railways",
-      authority: "Rail Vikas Nigam Limited [RVNL]",
-      projectName: "Dedicated Freight Corridor (East)...",
-      originalCost: "6,850",
-      physicalProgress: "82",
-      latestRevisedCost: "7,200",
-      latestRevisedDate: "31/03/2027",
-      IconComponent: RailwaysSvg,
-      filterStatus: 'Ongoing'
-    }
-  ];
-
   return (
     <div className="space-y-0 select-none">
       
@@ -258,7 +246,7 @@ export default function StatsOverview({ stats, onFilterClick }) {
           {/* 1. Header Group: Geist Mono Eyebrow */}
           <div className="mb-4">
             <span className="mono-eyebrow text-[#8f8f8f] block mb-2">
-              DRISHTI // PAIMANA INFRASTRUCTURE INTELLIGENCE
+              PAIMANA // INFRASTRUCTURE INTELLIGENCE
             </span>
             <span className="inline-block text-[11px] font-mono font-medium text-[#4d4d4d] px-3 py-1 bg-[#f2f2f2] border border-[#ebebeb] rounded-[6px]">
               DATA-DRIVEN RISK INTELLIGENCE &amp; SYSTEMIC HEALTH TRACKING
@@ -275,6 +263,57 @@ export default function StatsOverview({ stats, onFilterClick }) {
             Track project progress, uncover emerging risks, and understand
             what needs attention before administrative delays become major capital overruns.
           </p>
+
+          {/* 4. Interactive Live Metric Summary Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10 text-left">
+            <div 
+              role="button"
+              onClick={() => onFilterClick && onFilterClick('All')}
+              className="p-4 rounded-[12px] bg-[#fafafa] border border-[#ebebeb] hover:border-[#171717] transition-all cursor-pointer group shadow-whisper"
+            >
+              <span className="mono-eyebrow text-[10px] text-[#8f8f8f] block uppercase">Total Monitored</span>
+              <div className="text-2xl sm:text-3xl font-semibold font-mono text-[#171717] mt-1">
+                <AnimatedCounter value={stats?.totalProjects || 4547} />
+              </div>
+              <p className="text-[11px] text-[#8f8f8f] font-mono mt-0.5">₹{stats?.totalCostLakhCr || '31.15'} Lakh Cr Outlay</p>
+            </div>
+
+            <div 
+              role="button"
+              onClick={() => onFilterClick && onFilterClick('Ongoing')}
+              className="p-4 rounded-[12px] bg-[#fafafa] border border-[#ebebeb] hover:border-[#0070f3] transition-all cursor-pointer group shadow-whisper"
+            >
+              <span className="mono-eyebrow text-[10px] text-[#8f8f8f] block uppercase">On Schedule</span>
+              <div className="text-2xl sm:text-3xl font-semibold font-mono text-[#0070f3] mt-1">
+                <AnimatedCounter value={stats?.onTime || 4059} />
+              </div>
+              <p className="text-[11px] text-[#8f8f8f] font-mono mt-0.5">89.3% On Milestone Pace</p>
+            </div>
+
+            <div 
+              role="button"
+              onClick={() => onFilterClick && onFilterClick('Delayed')}
+              className="p-4 rounded-[12px] bg-[#fafafa] border border-[#ebebeb] hover:border-[#f5a623] transition-all cursor-pointer group shadow-whisper"
+            >
+              <span className="mono-eyebrow text-[10px] text-[#8f8f8f] block uppercase">Active Delay</span>
+              <div className="text-2xl sm:text-3xl font-semibold font-mono text-[#f5a623] mt-1">
+                <AnimatedCounter value={stats?.delayed || 488} />
+              </div>
+              <p className="text-[11px] text-[#8f8f8f] font-mono mt-0.5">{stats?.avgDelay || 6.2} Mo Avg Variance</p>
+            </div>
+
+            <div 
+              role="button"
+              onClick={() => onFilterClick && onFilterClick('HighRisk')}
+              className="p-4 rounded-[12px] bg-[#fafafa] border border-[#ebebeb] hover:border-[#ee0000] transition-all cursor-pointer group shadow-whisper"
+            >
+              <span className="mono-eyebrow text-[10px] text-[#8f8f8f] block uppercase">Predictive Risk</span>
+              <div className="text-2xl sm:text-3xl font-semibold font-mono text-[#ee0000] mt-1">
+                <AnimatedCounter value={stats?.highRisk || 1842} />
+              </div>
+              <p className="text-[11px] text-[#8f8f8f] font-mono mt-0.5">High / Critical Flagged</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -296,7 +335,7 @@ export default function StatsOverview({ stats, onFilterClick }) {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 px-4 sm:px-6 gap-3">
             <div>
               <div className="mono-eyebrow text-[#8f8f8f] mb-1">
-                CENTRAL SECTOR // MEGA INVESTMENTS &gt; ₹4,000 CR
+                CENTRAL SECTOR // TOP 5 MEGA INVESTMENTS BY CAPITAL OUTLAY
               </div>
               <h2 className="text-2xl sm:text-3xl font-semibold text-[#171717] tracking-[-1.28px]">
                 High Value Projects
@@ -319,11 +358,18 @@ export default function StatsOverview({ stats, onFilterClick }) {
               return (
                 <div
                   key={card.id}
-                  onClick={(e) => {
-                    e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                    if (onFilterClick) onFilterClick(card.filterStatus);
+                  onClick={() => {
+                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                    document.documentElement.scrollTop = 0;
+                    document.body.scrollTop = 0;
+                    if (onSelectProject) {
+                      onSelectProject(card.id || card.rawId);
+                    } else if (onFilterClick) {
+                      onFilterClick(card.filterStatus);
+                    }
                   }}
-                  className="w-[280px] sm:w-[310px] flex-shrink-0 bg-white rounded-[12px] border border-[#ebebeb] shadow-whisper p-5 flex flex-col justify-between text-center transition-all duration-200 hover:border-[#d4d4d4] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 cursor-pointer group"
+                  title={`View Intelligence Dossier for ${card.projectName}`}
+                  className="w-[280px] sm:w-[310px] flex-shrink-0 bg-white rounded-[12px] border border-[#ebebeb] shadow-whisper p-5 flex flex-col justify-between text-center transition-all duration-200 hover:border-[#0070f3] hover:shadow-[0_8px_24px_rgba(0,112,243,0.12)] hover:-translate-y-1 cursor-pointer group"
                 >
                   {/* Top Sector Icon & Tag */}
                   <div>
@@ -397,6 +443,12 @@ export default function StatsOverview({ stats, onFilterClick }) {
                       </span>
                     </div>
 
+                  </div>
+
+                  {/* Dossier Redirection Prompt */}
+                  <div className="mt-3 pt-2.5 border-t border-[#ebebeb] flex items-center justify-center gap-1.5 text-xs font-mono font-medium text-[#0070f3] group-hover:text-[#0052FF]">
+                    <span>Open Project Dossier</span>
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                   </div>
 
                 </div>

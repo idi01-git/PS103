@@ -1,233 +1,122 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  BarChart3, 
-  Layers, 
-  MapPin, 
-  ChevronRight, 
-  ChevronLeft,
-  Sparkles,
-  ArrowRight,
-  TrendingUp,
-  Activity
-} from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import highwayImg from '../assets/images/indian_highway.jpg';
 import bridgeImg from '../assets/images/indian_bridge.jpg';
 import trainImg from '../assets/images/indian_train.jpg';
 
 const HERO_SLIDES = [
-  {
-    id: 1,
-    eyebrow: "INFRASTRUCTURE ACCELERATION // 36 STATES & UTS",
-    title: "National Infrastructure Acceleration & Audit",
-    subtitle: "Real-time surveillance of mega projects above ₹150 Crore across Bharat's critical economic corridors.",
-    tag: "Bharatmala & Strategic Corridors",
-    metrics: "₹48.5 Lakh Cr Portfolio",
-    kpi: "1,842 Active Projects",
-    image: highwayImg
-  },
-  {
-    id: 2,
-    eyebrow: "EXPLAINABLE AI ENGINE // PREDICTIVE SHAP ANALYSIS",
-    title: "Explainable AI Risk Analysis & Cost Tracking",
-    subtitle: "Predictive SHAP decision-support models identifying cost overruns and inter-departmental bottlenecks before delays occur.",
-    tag: "MoSPI Intelligence Engine",
-    metrics: "84% Bottleneck Accuracy",
-    kpi: "28.4% Avg Cost Overrun Identified",
-    image: bridgeImg
-  },
-  {
-    id: 3,
-    eyebrow: "MULTI-MINISTRY GOVERNANCE // CENTRAL AUDIT TRAIL",
-    title: "Transparent Multi-Ministry Project Governance",
-    subtitle: "Verifiable audit trails, interactive spatial choropleths, and inter-departmental dependency graphs with cryptographic precision.",
-    tag: "Public Accountability Portal",
-    metrics: "1,200+ Audit Trail Records",
-    kpi: "18 Union Ministries Linked",
-    image: trainImg
-  }
+  { id: 1, image: highwayImg, alt: "National Expressway Infrastructure Corridor" },
+  { id: 2, image: bridgeImg, alt: "Coastal Bridge and Marine Infrastructure" },
+  { id: 3, image: trainImg, alt: "High-Speed Rail Transit Viaduct" }
 ];
 
-export default function HeroSection({ onExploreDashboard, onViewProjects, onExploreMap }) {
+export default function HeroSection({ onExploreMap, onViewProjects, onExploreDashboard }) {
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  // Smooth image rotation with 200ms transition
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 7000);
+    }, 2000);
     return () => clearInterval(timer);
   }, []);
 
-  const slide = HERO_SLIDES[currentSlide];
-
   return (
-    <section className="relative overflow-hidden geist-hero-mesh border-b border-[#ebebeb] pt-12 pb-16 lg:pt-16 lg:pb-24">
+    <section className="relative overflow-hidden bg-[#fafafc] border-b border-slate-200 min-h-[calc(100vh-3.5rem)] flex flex-col justify-between">
       
-      {/* Mesh Glow Ambient Light */}
-      <div className="geist-hero-glow" />
+      {/* Background Architectural/Infrastructure Visual Canvas spanning full 100vh viewport height */}
+      <div className="absolute top-0 right-0 w-full lg:w-[62%] xl:w-[60%] h-full overflow-hidden pointer-events-none select-none">
+        {HERO_SLIDES.map((s, idx) => (
+          <div
+            key={s.id}
+            className={`absolute inset-0 transition-opacity duration-200 ease-in-out ${
+              currentSlide === idx ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <img
+              src={s.image}
+              alt={s.alt}
+              className="w-full h-full object-cover object-center lg:object-left"
+            />
+          </div>
+        ))}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Desktop Left-to-Right feather: strictly restricted to 40% of the image */}
+        <div className="hidden lg:block absolute inset-y-0 left-0 w-[40%] bg-gradient-to-r from-[#fafafc] via-[#fafafc]/75 to-transparent pointer-events-none" />
         
-        {/* Main Hero Grid: Text & CTAs on Left, Product Feature Card with Indian Infrastructure Visual on Right */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
-          {/* Left Column: Tightly Tracked Geist Sans & Pill CTAs */}
-          <div className="lg:col-span-7 space-y-6">
-            
-            {/* Technical Eyebrow in Geist Mono */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[100px] bg-white border border-[#ebebeb] shadow-whisper text-[#171717]">
-              <span className="w-2 h-2 rounded-full bg-[#0070f3] animate-pulse" />
-              <span className="mono-eyebrow text-[11px] text-[#171717]">
-                {slide.eyebrow}
-              </span>
-            </div>
+        {/* Mobile/Tablet Vertical Gradient Overlay */}
+        <div className="lg:hidden absolute inset-0 bg-gradient-to-b from-[#fafafc] via-[#fafafc]/92 via-55% to-[#fafafc]/40 pointer-events-none" />
 
-            {/* Display XL Headline with tight negative tracking (-2.4px) */}
-            <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-semibold text-[#171717] tracking-[-2.4px] leading-[1.08]">
-              {slide.title}
-            </h1>
+        {/* Viewport Height Grounding Overlays (Top & Bottom Fades) */}
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#fafafc] via-[#fafafc]/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#fafafc] via-[#fafafc]/60 to-transparent pointer-events-none" />
+      </div>
 
-            {/* Body Copy */}
-            <p className="text-base sm:text-lg text-[#4d4d4d] leading-relaxed max-w-2xl font-normal">
-              {slide.subtitle}
-            </p>
+      {/* Main Content Area: Centered Vertically in the 100vh Viewport */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1 flex flex-col justify-center py-10 lg:py-16">
+        
+        {/* Left Column: Direct High-Impact Headline, CTAs, & Telemetry */}
+        <div className="max-w-2xl lg:max-w-3xl">
 
-            {/* Marketing Pill CTAs per Vercel Spec */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              {/* Marketing Primary Pill */}
-              <button
-                onClick={onExploreDashboard}
-                className="btn-marketing-primary group"
-              >
-                <BarChart3 className="w-4 h-4 mr-2 text-white" />
-                <span>Explore Dashboard</span>
-                <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
-              </button>
+          {/* High-Impact 2-Line Headline */}
+          <h1 className="text-4xl sm:text-5xl lg:text-[60px] xl:text-[66px] font-extrabold text-slate-900 tracking-tight leading-[1.05] mb-6">
+            Built Smarter.<br />
+            <span className="text-[#0052FF]">Delivered Faster.</span>
+          </h1>
 
-              {/* Marketing Secondary Pill */}
-              <button
-                onClick={onViewProjects}
-                className="btn-marketing-secondary"
-              >
-                <Layers className="w-4 h-4 mr-2 text-[#4d4d4d]" />
-                <span>View Projects</span>
-              </button>
+          {/* Descriptive Body Copy */}
+          <p className="text-base sm:text-lg lg:text-xl text-slate-600 leading-relaxed mb-9 max-w-xl font-normal">
+            Real-time surveillance and predictive AI early warning systems across the ₹31.1 Lakh Cr national infrastructure portfolio. Engineered for precision, accountability, and zero-delay delivery.
+          </p>
 
-              {/* Marketing Secondary Pill for Map */}
-              <button
-                onClick={onExploreMap}
-                className="btn-marketing-secondary hover:bg-[#fafafa]"
-              >
-                <MapPin className="w-4 h-4 mr-2 text-[#0070f3]" />
-                <span>India Map</span>
-              </button>
-            </div>
+          {/* Exactly Two Action CTAs */}
+          <div className="flex flex-wrap items-center gap-4 mb-10 sm:mb-12">
+            {/* Primary CTA: Redirects directly to Map Section */}
+            <button
+              onClick={onExploreMap}
+              className="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-[#0052FF] hover:bg-[#0041d8] text-white font-semibold text-[15px] sm:text-base shadow-lg shadow-blue-500/25 transition-all duration-200 group active:scale-[0.98] cursor-pointer"
+            >
+              <span>Explore Map</span>
+              <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
+            </button>
 
-            {/* Technical Spec Telemetry Bar */}
-            <div className="pt-6 border-t border-[#ebebeb] flex flex-wrap items-center gap-6 text-xs text-[#8f8f8f] font-mono">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#50e3c2]" />
-                <span className="text-[#171717] font-semibold">{slide.metrics}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#7928ca]" />
-                <span className="text-[#171717] font-semibold">{slide.kpi}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#eb367f]" />
-                <span>{slide.tag}</span>
-              </div>
-            </div>
-
+            {/* Secondary CTA: Explores Projects Directory */}
+            <button
+              onClick={onViewProjects}
+              className="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-white hover:bg-blue-50/60 border-2 border-[#0052FF] text-[#0052FF] font-semibold text-[15px] sm:text-base transition-all duration-200 active:scale-[0.98] cursor-pointer"
+            >
+              <span>Explore Projects</span>
+            </button>
           </div>
 
-          {/* Right Column: Precise Hairline Visual Card Container */}
-          <div className="lg:col-span-5">
-            <div className="geist-card-elevated overflow-hidden relative group">
-              
-              {/* Infrastructure Image Window */}
-              <div className="relative h-64 sm:h-72 overflow-hidden bg-[#fafafa]">
-                <img 
-                  src={slide.image} 
-                  alt={slide.title} 
-                  className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                
-                {/* Overlay Badge */}
-                <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white text-xs">
-                  <span className="font-mono text-[11px] bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-[6px] border border-white/20">
-                    {slide.tag}
-                  </span>
-                  <span className="font-mono text-[11px] bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-[6px] border border-white/20">
-                    0{currentSlide + 1} / 0{HERO_SLIDES.length}
-                  </span>
-                </div>
-              </div>
-
-              {/* Bottom Card Console Details */}
-              <div className="p-5 bg-white space-y-4">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="mono-eyebrow text-[#8f8f8f]">STATUS: ACTIVE TELEMETRY</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="font-mono text-[11px] text-[#171717] font-semibold">ONLINE</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div className="p-2.5 rounded-[6px] bg-[#fafafa] border border-[#ebebeb]">
-                    <span className="mono-eyebrow text-[10px] text-[#8f8f8f] block">SURVEILLANCE</span>
-                    <span className="font-semibold text-sm text-[#171717] font-mono mt-0.5 block">{slide.metrics}</span>
-                  </div>
-                  <div className="p-2.5 rounded-[6px] bg-[#fafafa] border border-[#ebebeb]">
-                    <span className="mono-eyebrow text-[10px] text-[#8f8f8f] block">SYSTEM BENCHMARK</span>
-                    <span className="font-semibold text-sm text-[#171717] font-mono mt-0.5 block">{slide.kpi}</span>
-                  </div>
-                </div>
-
-                {/* Carousel Controls Bar */}
-                <div className="flex items-center justify-between pt-2 border-t border-[#ebebeb]">
-                  <div className="flex space-x-1.5">
-                    {HERO_SLIDES.map((s, idx) => (
-                      <button
-                        key={s.id}
-                        onClick={() => setCurrentSlide(idx)}
-                        className={`h-1.5 rounded-full transition-all ${
-                          currentSlide === idx ? 'w-6 bg-[#171717]' : 'w-2 bg-[#ebebeb] hover:bg-[#d4d4d4]'
-                        }`}
-                        aria-label={`Go to slide ${idx + 1}`}
-                      />
-                    ))}
-                  </div>
-
-                  <div className="flex items-center space-x-1.5">
-                    <button
-                      onClick={() => setCurrentSlide((prev) => (prev === 0 ? HERO_SLIDES.length - 1 : prev - 1))}
-                      className="p-1.5 rounded-[6px] bg-white border border-[#ebebeb] text-[#171717] hover:bg-[#fafafa] transition-colors"
-                      aria-label="Previous Slide"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length)}
-                      className="p-1.5 rounded-[6px] bg-white border border-[#ebebeb] text-[#171717] hover:bg-[#fafafa] transition-colors"
-                      aria-label="Next Slide"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-
+          {/* Clean Integrated Telemetry Metrics Strip */}
+          <div className="pt-8 sm:pt-10 border-t border-slate-200/90 grid grid-cols-3 gap-6 sm:gap-8 max-w-xl">
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">4,547</div>
+              <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Projects Monitored</div>
+            </div>
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#0052FF] tracking-tight">₹31.1L Cr</div>
+              <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Capital Portfolio</div>
+            </div>
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-emerald-600 tracking-tight">84.2%</div>
+              <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">AI Risk Precision</div>
             </div>
           </div>
 
         </div>
 
       </div>
+
+      {/* Subtle Scroll Cue at the bottom of the 100vh viewport */}
+      <div className="hidden sm:flex relative z-10 justify-center pb-4 pointer-events-none select-none">
+        <div className="flex flex-col items-center gap-1 text-slate-400">
+          <span className="text-[10px] font-mono tracking-widest uppercase text-slate-400">Scroll</span>
+          <ChevronDown className="w-3.5 h-3.5 animate-bounce text-slate-400" />
+        </div>
+      </div>
+
     </section>
   );
 }
-
-

@@ -30,3 +30,7 @@ Thumbs.db
 # Temporary / Scratch & Archive Files
 scratch/
 *.zip
+.neon
+catboost_info/
+data_bundle/
+outputs/

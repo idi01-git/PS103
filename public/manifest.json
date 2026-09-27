@@ -1,0 +1,15 @@
+{
+  "short_name": "PAIMANA",
+  "name": "PAIMANA - Infrastructure Intelligence Platform",
+  "icons": [
+    {
+      "src": "/emblem.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#fafafa",
+  "theme_color": "#0f172a",
+  "display": "standalone"
+}

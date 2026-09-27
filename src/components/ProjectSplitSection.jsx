@@ -51,10 +51,29 @@ const LeftProjectList = memo(({ projects, activeIndex, onSelectIndex }) => {
               {prj.name}
             </h4>
 
-            {/* Sector & Progress */}
-            <div className="flex items-center justify-between gap-2 pt-2 mt-2 border-t border-[#ebebeb] text-[11px]">
-              <span className="text-[10px] text-[#8f8f8f] truncate">{prj.sector}</span>
-              <span className="font-mono text-xs font-semibold text-[#171717]">{prj.progressPercent}%</span>
+            {/* Sector & Ministry Tag */}
+            <div className="flex items-center gap-1.5 text-[10px] text-[#737373] mt-1">
+              <span className="font-mono bg-[#f5f5f5] px-1.5 py-0.2 rounded border border-[#ebebeb] text-[#171717] line-clamp-1">
+                {prj.sector}
+              </span>
+              <span>•</span>
+              <span className="line-clamp-1 text-[#4d4d4d]">
+                {prj.ministry}
+              </span>
+            </div>
+
+            {/* Metrics Row: Total Cost & Current Delay */}
+            <div className="flex items-center justify-between gap-2 pt-2 mt-2 border-t border-[#ebebeb] text-[11px] font-mono">
+              <span className="font-semibold text-[#171717]">
+                ₹{(prj.currentCost || prj.approvedCost || 0).toLocaleString()} Cr
+              </span>
+              <span className={`px-1.5 py-0.2 rounded text-[10px] font-semibold ${
+                prj.timeDelayMonths > 0 
+                  ? 'bg-[#fffbeb] text-amber-800 border border-[#fde68a]' 
+                  : 'bg-[#f0fdf4] text-emerald-800 border border-[#bbf7d0]'
+              }`}>
+                {prj.timeDelayMonths > 0 ? `+${prj.timeDelayMonths}m Delay` : 'On-Time (0m)'}
+              </span>
             </div>
           </div>
         );
@@ -157,7 +176,9 @@ const RightProjectInspector = memo(({ project, onSelectProject }) => {
                 <p className="mono-eyebrow text-[8px] text-[#8f8f8f]">REVISED COST</p>
                 <p className="text-xs sm:text-sm font-semibold font-mono text-amber-700 mt-0.5">₹{revCost.toLocaleString()} Cr</p>
                 {costIncrease > 0 && (
-                  <p className="text-[9px] font-mono text-rose-600 font-semibold">+₹{costIncrease.toLocaleString()} Cr</p>
+                  <p className="text-[9px] font-mono text-rose-600 font-semibold">
+                    +₹{costIncrease.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr (+{((costIncrease / (origCost || 1)) * 100).toFixed(2)}%)
+                  </p>
                 )}
               </div>
               <div>

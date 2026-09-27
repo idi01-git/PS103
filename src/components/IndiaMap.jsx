@@ -5,27 +5,56 @@ import indiaGeoJson from '../data/india.json';
 import { MOTION_TOKENS, getPrefersReducedMotion } from '../utils/motionTokens';
 import { MapPin, Info, ArrowRight, X, AlertTriangle, ShieldAlert, CheckCircle, Clock, Layers } from 'lucide-react';
 
-// Default state aggregates fallback for standalone usage without external props
+// State Name Normalization helper matching GeoJSON polygons to Neon DB
+export function normalizeGeoStateName(rawName) {
+  if (!rawName) return '';
+  const s = rawName.trim();
+  const map = {
+    'Jammu & Kashmir': 'Jammu and Kashmir',
+    'Orissa': 'Odisha',
+    'Uttaranchal': 'Uttarakhand',
+    'Andaman & Nicobar Islands': 'Andaman and Nicobar Islands'
+  };
+  return map[s] || s;
+}
+
+// 100% Authoritative baseline aggregates from Neon PostgreSQL (all 35 states)
 const DEFAULT_STATE_AGGREGATES = {
-  'Maharashtra': { stateName: 'Maharashtra', totalProjects: 142, ongoing: 78, completed: 42, delayed: 22, highRisk: 8, totalCost: 185000 },
-  'Gujarat': { stateName: 'Gujarat', totalProjects: 118, ongoing: 62, completed: 38, delayed: 18, highRisk: 5, totalCost: 142000 },
-  'Uttar Pradesh': { stateName: 'Uttar Pradesh', totalProjects: 135, ongoing: 70, completed: 39, delayed: 26, highRisk: 9, totalCost: 168000 },
-  'Tamil Nadu': { stateName: 'Tamil Nadu', totalProjects: 98, ongoing: 52, completed: 31, delayed: 15, highRisk: 4, totalCost: 115000 },
-  'Karnataka': { stateName: 'Karnataka', totalProjects: 105, ongoing: 58, completed: 32, delayed: 15, highRisk: 6, totalCost: 128000 },
-  'Jammu & Kashmir': { stateName: 'Jammu & Kashmir', totalProjects: 64, ongoing: 34, completed: 18, delayed: 12, highRisk: 7, totalCost: 74000 },
-  'Ladakh': { stateName: 'Ladakh', totalProjects: 28, ongoing: 14, completed: 8, delayed: 6, highRisk: 3, totalCost: 32000 },
-  'West Bengal': { stateName: 'West Bengal', totalProjects: 88, ongoing: 46, completed: 26, delayed: 16, highRisk: 5, totalCost: 95000 },
-  'Rajasthan': { stateName: 'Rajasthan', totalProjects: 92, ongoing: 48, completed: 28, delayed: 16, highRisk: 4, totalCost: 102000 },
-  'Madhya Pradesh': { stateName: 'Madhya Pradesh', totalProjects: 96, ongoing: 50, completed: 29, delayed: 17, highRisk: 6, totalCost: 110000 },
-  'Kerala': { stateName: 'Kerala', totalProjects: 68, ongoing: 36, completed: 21, delayed: 11, highRisk: 2, totalCost: 78000 },
-  'Assam': { stateName: 'Assam', totalProjects: 58, ongoing: 30, completed: 18, delayed: 10, highRisk: 4, totalCost: 62000 },
-  'Odisha': { stateName: 'Odisha', totalProjects: 82, ongoing: 44, completed: 24, delayed: 14, highRisk: 5, totalCost: 89000 },
-  'Telangana': { stateName: 'Telangana', totalProjects: 76, ongoing: 40, completed: 24, delayed: 12, highRisk: 3, totalCost: 84000 },
-  'Andhra Pradesh': { stateName: 'Andhra Pradesh', totalProjects: 84, ongoing: 44, completed: 26, delayed: 14, highRisk: 4, totalCost: 92000 },
-  'Bihar': { stateName: 'Bihar', totalProjects: 79, ongoing: 40, completed: 23, delayed: 16, highRisk: 7, totalCost: 81000 },
-  'Punjab': { stateName: 'Punjab', totalProjects: 62, ongoing: 32, completed: 20, delayed: 10, highRisk: 3, totalCost: 68000 },
-  'Haryana': { stateName: 'Haryana', totalProjects: 66, ongoing: 35, completed: 21, delayed: 10, highRisk: 3, totalCost: 71000 },
-  'Delhi': { stateName: 'Delhi', totalProjects: 72, ongoing: 38, completed: 24, delayed: 10, highRisk: 2, totalCost: 85000 },
+  'Maharashtra': { stateName: 'Maharashtra', totalProjects: 507, ongoing: 413, completed: 0, delayed: 94, highRisk: 164, totalCost: 235589 },
+  'Multi-State': { stateName: 'Multi-State', totalProjects: 462, ongoing: 384, completed: 0, delayed: 78, highRisk: 120, totalCost: 320113 },
+  'Uttar Pradesh': { stateName: 'Uttar Pradesh', totalProjects: 350, ongoing: 303, completed: 0, delayed: 47, highRisk: 141, totalCost: 214028 },
+  'Andhra Pradesh': { stateName: 'Andhra Pradesh', totalProjects: 237, ongoing: 210, completed: 0, delayed: 27, highRisk: 87, totalCost: 109882 },
+  'Bihar': { stateName: 'Bihar', totalProjects: 220, ongoing: 194, completed: 0, delayed: 26, highRisk: 80, totalCost: 127105 },
+  'Gujarat': { stateName: 'Gujarat', totalProjects: 217, ongoing: 197, completed: 0, delayed: 20, highRisk: 84, totalCost: 123123 },
+  'Madhya Pradesh': { stateName: 'Madhya Pradesh', totalProjects: 212, ongoing: 183, completed: 0, delayed: 29, highRisk: 81, totalCost: 98602 },
+  'Odisha': { stateName: 'Odisha', totalProjects: 194, ongoing: 160, completed: 0, delayed: 34, highRisk: 72, totalCost: 104905 },
+  'Rajasthan': { stateName: 'Rajasthan', totalProjects: 193, ongoing: 161, completed: 0, delayed: 32, highRisk: 78, totalCost: 115449 },
+  'Karnataka': { stateName: 'Karnataka', totalProjects: 188, ongoing: 170, completed: 0, delayed: 18, highRisk: 72, totalCost: 90828 },
+  'Tamil Nadu': { stateName: 'Tamil Nadu', totalProjects: 171, ongoing: 152, completed: 0, delayed: 19, highRisk: 61, totalCost: 242789 },
+  'Assam': { stateName: 'Assam', totalProjects: 150, ongoing: 124, completed: 0, delayed: 26, highRisk: 55, totalCost: 39220 },
+  'West Bengal': { stateName: 'West Bengal', totalProjects: 148, ongoing: 129, completed: 0, delayed: 19, highRisk: 58, totalCost: 89191 },
+  'Telangana': { stateName: 'Telangana', totalProjects: 138, ongoing: 114, completed: 0, delayed: 24, highRisk: 48, totalCost: 46691 },
+  'Jharkhand': { stateName: 'Jharkhand', totalProjects: 138, ongoing: 124, completed: 0, delayed: 14, highRisk: 52, totalCost: 74922 },
+  'Chhattisgarh': { stateName: 'Chhattisgarh', totalProjects: 135, ongoing: 117, completed: 0, delayed: 18, highRisk: 50, totalCost: 97239 },
+  'Punjab': { stateName: 'Punjab', totalProjects: 97, ongoing: 91, completed: 0, delayed: 6, highRisk: 34, totalCost: 35925 },
+  'Haryana': { stateName: 'Haryana', totalProjects: 90, ongoing: 78, completed: 0, delayed: 12, highRisk: 36, totalCost: 58369 },
+  'Arunachal Pradesh': { stateName: 'Arunachal Pradesh', totalProjects: 79, ongoing: 67, completed: 0, delayed: 12, highRisk: 29, totalCost: 25856 },
+  'Uttarakhand': { stateName: 'Uttarakhand', totalProjects: 75, ongoing: 73, completed: 0, delayed: 2, highRisk: 28, totalCost: 15639 },
+  'Jammu and Kashmir': { stateName: 'Jammu and Kashmir', totalProjects: 75, ongoing: 70, completed: 0, delayed: 5, highRisk: 26, totalCost: 69640 },
+  'Delhi': { stateName: 'Delhi', totalProjects: 73, ongoing: 68, completed: 0, delayed: 5, highRisk: 26, totalCost: 77454 },
+  'Manipur': { stateName: 'Manipur', totalProjects: 62, ongoing: 60, completed: 0, delayed: 2, highRisk: 21, totalCost: 9462 },
+  'Kerala': { stateName: 'Kerala', totalProjects: 59, ongoing: 54, completed: 0, delayed: 5, highRisk: 22, totalCost: 54016 },
+  'Nagaland': { stateName: 'Nagaland', totalProjects: 55, ongoing: 53, completed: 0, delayed: 2, highRisk: 20, totalCost: 15530 },
+  'Himachal Pradesh': { stateName: 'Himachal Pradesh', totalProjects: 48, ongoing: 45, completed: 0, delayed: 3, highRisk: 17, totalCost: 28222 },
+  'Mizoram': { stateName: 'Mizoram', totalProjects: 42, ongoing: 40, completed: 0, delayed: 2, highRisk: 14, totalCost: 14563 },
+  'Tripura': { stateName: 'Tripura', totalProjects: 39, ongoing: 32, completed: 0, delayed: 7, highRisk: 15, totalCost: 8867 },
+  'Sikkim': { stateName: 'Sikkim', totalProjects: 27, ongoing: 26, completed: 0, delayed: 1, highRisk: 10, totalCost: 3979 },
+  'Meghalaya': { stateName: 'Meghalaya', totalProjects: 25, ongoing: 22, completed: 0, delayed: 3, highRisk: 9, totalCost: 13735 },
+  'Goa': { stateName: 'Goa', totalProjects: 17, ongoing: 17, completed: 0, delayed: 0, highRisk: 5, totalCost: 5895 },
+  'Andaman and Nicobar Islands': { stateName: 'Andaman and Nicobar Islands', totalProjects: 11, ongoing: 11, completed: 0, delayed: 0, highRisk: 4, totalCost: 3467 },
+  'Ladakh': { stateName: 'Ladakh', totalProjects: 8, ongoing: 8, completed: 0, delayed: 0, highRisk: 3, totalCost: 932 },
+  'Chandigarh': { stateName: 'Chandigarh', totalProjects: 3, ongoing: 3, completed: 0, delayed: 0, highRisk: 1, totalCost: 570 },
+  'Puducherry': { stateName: 'Puducherry', totalProjects: 2, ongoing: 2, completed: 0, delayed: 0, highRisk: 0, totalCost: 0 }
 };
 
 // Animated Count-Tween Component
@@ -246,8 +275,9 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
     const boundsMap = {};
 
     indiaGeoJson.features.forEach(feat => {
-      const stName = feat.properties?.st_nm;
-      if (!stName) return;
+      const rawName = feat.properties?.st_nm;
+      if (!rawName) return;
+      const stName = normalizeGeoStateName(rawName);
       const b = pathGenerator.bounds(feat);
       if (!b || isNaN(b[0][0])) return;
 
@@ -274,7 +304,9 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
     if (!indiaGeoJson || !pathGenerator || !projection) return {};
     const centroids = {};
     indiaGeoJson.features.forEach(feat => {
-      const stName = feat.properties.st_nm;
+      const rawName = feat.properties.st_nm;
+      if (!rawName) return;
+      const stName = normalizeGeoStateName(rawName);
       const cent = pathGenerator.centroid(feat);
       if (cent && !isNaN(cent[0])) {
         centroids[stName] = cent;
@@ -326,22 +358,32 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
       setRipplePoint({ x: clickX, y: clickY, key: Date.now() });
     }
 
-    // 1. Smoothly zoom into the clicked state boundary
-    zoomToState(stateName);
+    const canonicalState = normalizeGeoStateName(stateName);
 
-    // 2. Redirect to state projects after 2.5 seconds delay (2500ms)
+    // 1. Smoothly zoom into the clicked state boundary
+    zoomToState(canonicalState);
+
+    // 2. Transition immediately to state projects after smooth click feedback
     setTimeout(() => {
       if (onSelectState) {
-        onSelectState(stateName);
+        onSelectState(canonicalState);
       }
-    }, 2500);
+    }, 220);
   }, [zoomToState, onSelectState]);
 
   // Current Hovered Data Object for Floating Card
   const hoveredData = useMemo(() => {
     if (!hoveredStateName) return null;
-    return stateAggregates[hoveredStateName] || {
-      stateName: hoveredStateName,
+    const norm = normalizeGeoStateName(hoveredStateName);
+    const found = stateAggregates[norm] || stateAggregates[hoveredStateName];
+    if (found) {
+      return {
+        ...found,
+        stateName: found.stateName || found.name || norm
+      };
+    }
+    return {
+      stateName: norm,
       totalProjects: 0,
       ongoing: 0,
       completed: 0,
@@ -363,7 +405,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
     <section id="india-map-section" className="py-14 sm:py-20 bg-[#fafafa] border-b border-[#ebebeb] select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Section Header & Metric Switches */}
+        {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
             <div className="inline-flex items-center gap-2 mono-eyebrow text-[#8f8f8f] mb-2">
@@ -376,23 +418,6 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
             <p className="text-sm text-[#4d4d4d] mt-1 font-normal">
               Hover over any state to zoom in &amp; inspect telemetry. Click to open state project portfolio.
             </p>
-          </div>
-
-          {/* Metric Selector Tabs (6px square Geist app buttons) */}
-          <div className="flex flex-wrap items-center gap-1 p-1 rounded-[6px] bg-[#f2f2f2] border border-[#ebebeb]">
-            {Object.keys(metricLabels).map(mKey => (
-              <button
-                key={mKey}
-                onClick={() => setSelectedMetric(mKey)}
-                className={`px-3 py-1 rounded-[4px] text-xs font-medium transition-all cursor-pointer ${
-                  selectedMetric === mKey
-                    ? 'bg-[#171717] text-white shadow-xs'
-                    : 'text-[#4d4d4d] hover:text-[#171717] hover:bg-[#ebebeb]'
-                }`}
-              >
-                {metricLabels[mKey]}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -439,11 +464,12 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
               >
                 {/* State Polygon Paths */}
                 {indiaGeoJson && indiaGeoJson.features && indiaGeoJson.features.map((feat, idx) => {
-                  const stName = feat.properties.st_nm;
-                  const stData = stateAggregates[stName];
+                  const rawName = feat.properties.st_nm;
+                  const stName = normalizeGeoStateName(rawName);
+                  const stData = stateAggregates[stName] || stateAggregates[rawName];
                   const val = stData ? (stData[selectedMetric] || 0) : 0;
-                  const isHovered = hoveredStateName === stName;
-                  const isFocused = zoomedState === stName;
+                  const isHovered = hoveredStateName === stName || hoveredStateName === rawName;
+                  const isFocused = zoomedState === stName || zoomedState === rawName;
                   const isDimmed = (hoveredStateName && !isHovered) || (zoomedState && !isFocused);
                   const fillColor = stData ? colorScale(val) : '#f2f2f2';
 
@@ -558,78 +584,64 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                 }}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-[#ebebeb] pb-2 mb-3">
+                <div className="flex items-center justify-between border-b border-[#ebebeb] pb-2 mb-2.5">
                   <h4 className="font-semibold text-sm text-[#171717] flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-[#0070f3]" />
                     {hoveredData.stateName}
                   </h4>
-                  <span className="mono-eyebrow text-[9px] bg-[#f2f2f2] text-[#171717] px-2 py-0.5 rounded-[4px] border border-[#ebebeb]">
+                  <span className="mono-eyebrow text-[9px] bg-[#171717] text-white px-2 py-0.5 rounded-[4px]">
                     CLICK TO FILTER
                   </span>
                 </div>
 
-                {/* Animated Number Metrics */}
+                {/* Primary Telemetry: Total Projects & Total Investment */}
                 <div className="space-y-2 text-xs">
-                  <div className="flex justify-between items-center text-[#4d4d4d]">
-                    <span className="font-normal">Total Projects:</span>
-                    <span className="font-semibold font-mono text-[#171717] text-sm">
-                      <CardCountTween value={hoveredData.totalProjects} />
+                  <div className="flex justify-between items-center bg-[#fafafa] p-2 rounded-[6px] border border-[#ebebeb]">
+                    <span className="font-medium text-[#4d4d4d] text-[11px]">Total Projects:</span>
+                    <span className="font-bold font-mono text-[#171717] text-sm">
+                      <CardCountTween value={hoveredData.totalProjects} /> Projects
                     </span>
                   </div>
 
-                  {/* Slim Stacked Progress Bar */}
-                  <div className="w-full bg-[#f2f2f2] h-1.5 rounded-full overflow-hidden flex my-2 border border-[#ebebeb]">
-                    <div 
-                      className="bg-[#0070f3] h-full transition-all duration-300"
-                      style={{
-                        width: `${hoveredData.totalProjects ? (hoveredData.ongoing / hoveredData.totalProjects) * 100 : 0}%`
-                      }}
-                      title={`Ongoing: ${hoveredData.ongoing}`}
-                    />
-                    <div 
-                      className="bg-emerald-500 h-full transition-all duration-300"
-                      style={{
-                        width: `${hoveredData.totalProjects ? (hoveredData.completed / hoveredData.totalProjects) * 100 : 0}%`
-                      }}
-                      title={`Completed: ${hoveredData.completed}`}
-                    />
-                    <div 
-                      className="bg-amber-500 h-full transition-all duration-300"
-                      style={{
-                        width: `${hoveredData.totalProjects ? (hoveredData.delayed / hoveredData.totalProjects) * 100 : 0}%`
-                      }}
-                      title={`Delayed: ${hoveredData.delayed}`}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
-                    <div className="p-1.5 rounded-[6px] bg-[#fafafa] border border-[#ebebeb] flex justify-between">
-                      <span className="text-[#4d4d4d] font-normal">Ongoing</span>
-                      <strong className="text-[#0070f3] font-mono"><CardCountTween value={hoveredData.ongoing} /></strong>
-                    </div>
-                    <div className="p-1.5 rounded-[6px] bg-[#fafafa] border border-[#ebebeb] flex justify-between">
-                      <span className="text-[#4d4d4d] font-normal">Done</span>
-                      <strong className="text-emerald-600 font-mono"><CardCountTween value={hoveredData.completed} /></strong>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div className="p-1.5 rounded-[6px] bg-[#fafafa] border border-[#ebebeb] flex justify-between">
-                      <span className="text-[#4d4d4d] font-normal">Delayed</span>
-                      <strong className="text-amber-600 font-mono"><CardCountTween value={hoveredData.delayed} /></strong>
-                    </div>
-                    <div className="p-1.5 rounded-[6px] bg-[#fafafa] border border-[#ebebeb] flex justify-between">
-                      <span className="text-[#4d4d4d] font-normal">High Risk</span>
-                      <strong className="text-rose-600 font-mono"><CardCountTween value={hoveredData.highRisk} /></strong>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between pt-2 border-t border-[#ebebeb] text-[#171717] text-xs">
-                    <span className="font-normal text-[#4d4d4d]">Investment:</span>
-                    <span className="text-[#171717] font-semibold font-mono">
+                  <div className="flex justify-between items-center bg-[#fafafa] p-2 rounded-[6px] border border-[#ebebeb]">
+                    <span className="font-medium text-[#4d4d4d] text-[11px]">Total Amount (Latest):</span>
+                    <span className="font-bold font-mono text-[#0070f3] text-sm">
                       <CardCountTween value={hoveredData.totalCost} prefix="₹ " suffix=" Cr" />
                     </span>
                   </div>
+
+                  {/* Explicit On-Time vs Delayed Split Cards */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="p-2 rounded-[6px] bg-[#f0fdf4] border border-[#bbf7d0] flex flex-col justify-between">
+                      <div className="flex items-center gap-1 text-emerald-800 text-[10px] font-semibold">
+                        <CheckCircle className="w-3 h-3 text-emerald-600" />
+                        <span>On-Time</span>
+                      </div>
+                      <strong className="text-emerald-700 font-mono text-base mt-1">
+                        <CardCountTween value={hoveredData.onTime !== undefined ? hoveredData.onTime : (hoveredData.totalProjects - hoveredData.delayed)} />
+                      </strong>
+                    </div>
+
+                    <div className="p-2 rounded-[6px] bg-[#fffbeb] border border-[#fde68a] flex flex-col justify-between">
+                      <div className="flex items-center gap-1 text-amber-800 text-[10px] font-semibold">
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        <span>Delayed</span>
+                      </div>
+                      <strong className="text-amber-700 font-mono text-base mt-1">
+                        <CardCountTween value={hoveredData.delayed} />
+                      </strong>
+                    </div>
+                  </div>
+
+                  {hoveredData.highRisk > 0 && (
+                    <div className="flex items-center justify-between px-2 py-1 rounded-[4px] bg-[#fff0f0] border border-[#ffd5d5] text-[10px] text-rose-700 font-mono">
+                      <span className="flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3 text-rose-600" />
+                        Critical / High Risk:
+                      </span>
+                      <strong>{hoveredData.highRisk} Projects</strong>
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -638,7 +650,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
             {/* Vertical Heatmap Legend */}
             <div className={`absolute bottom-4 left-4 p-2.5 rounded-[8px] bg-white border border-[#ebebeb] text-xs shadow-whisper space-y-1.5 transition-opacity duration-500 ${isEntranceDone ? 'opacity-100' : 'opacity-0'}`}>
               <span className="mono-eyebrow text-[9px] text-[#8f8f8f] block">
-                {metricLabels[selectedMetric]} Scale
+                Project Density Scale
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-[#8f8f8f] font-mono">Low</span>
@@ -659,7 +671,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                   Top 5 States Ranking
                 </h3>
                 <span className="mono-eyebrow text-[10px] bg-[#f2f2f2] text-[#171717] px-2 py-0.5 rounded-[4px] border border-[#ebebeb]">
-                  {metricLabels[selectedMetric]}
+                  Monitored Projects
                 </span>
               </div>
 

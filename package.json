@@ -1,5 +1,5 @@
 {
-  "name": "drishti-paimana-intelligence",
+  "name": "paimana-platform",
   "private": true,
   "version": "2.0.0",
   "type": "module",
@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@neon/config": "^1.7.2",
+    "@neon/env": "^1.4.3",
+    "@neondatabase/serverless": "^1.1.0",
     "d3": "^7.9.0",
     "d3-geo": "^3.1.1",
     "framer-motion": "^13.4.0",

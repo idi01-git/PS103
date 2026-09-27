@@ -1,4 +1,4 @@
-// Central Motion Tokens for Drishti-PAIMANA Interactive Maps & Components
+// Central Motion Tokens for PAIMANA Interactive Maps & Components
 export const MOTION_TOKENS = {
   hoverDuration: 180, // ms ease-out
   hoverEasing: 'cubic-bezier(0.16, 1, 0.3, 1)',

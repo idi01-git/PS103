@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { PROJECTS_MASTER, getStateAggregates, MINISTRIES_DATA, calculateDashboardSummary } from '../data/projectsData';
+import { useProjectData } from '../context/DataContext';
 import ProjectSplitSection from './ProjectSplitSection';
 import { 
   Filter, 
@@ -24,18 +25,6 @@ import {
   Sparkles,
   Columns
 } from 'lucide-react';
-
-const SECTORS_LIST = [
-  "Highways & Expressways",
-  "Urban Transit & Metro",
-  "Railways & Commuter Transit",
-  "Railways & Alpine Transport",
-  "Smart Cities & Industrial Parks",
-  "Irrigation & River Interlinking",
-  "Petroleum & Chemicals",
-  "Ports & Maritime",
-  "Renewable Energy & Solar"
-];
 
 const LOCATIONS_LIST = [
   "Maharashtra",
@@ -61,44 +50,147 @@ export default function ProjectListing({
   onStateChange, 
   onSelectProject,
   initialFilterStatus,
-  initialMinistry
+  initialMinistry,
+  initialSector,
+  initialSearchQuery
 }) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [groupMode, setGroupMode] = useState('ministry'); // 'ministry' | 'sector'
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
+  const [groupMode, setGroupMode] = useState(
+    initialSector && initialSector !== 'All' 
+      ? 'sector' 
+      : (initialMinistry && initialMinistry !== 'All' ? 'ministry' : 'ministry')
+  );
   const [stateFilter, setStateFilter] = useState(selectedState || 'All');
   const [ministryFilter, setMinistryFilter] = useState(initialMinistry || 'All');
-  const [sectorFilter, setSectorFilter] = useState('All');
+  const [sectorFilter, setSectorFilter] = useState(initialSector || 'All');
   const [statusFilter, setStatusFilter] = useState(initialFilterStatus || 'All');
   const [riskFilter, setRiskFilter] = useState('All');
   const [viewMode, setViewMode] = useState('split'); // 'split' | 'grid' | 'table'
-  const [activeProjectId, setActiveProjectId] = useState(PROJECTS_MASTER[0]?.id);
+  const { projects: masterProjects, stateAggregates: dbStateAggregates, ministriesData, isLoading } = useProjectData();
+  const sourceProjects = masterProjects && masterProjects.length > 0 ? masterProjects : PROJECTS_MASTER;
+  const [activeProjectId, setActiveProjectId] = useState(sourceProjects[0]?.id);
 
-  const stateAggregates = useMemo(() => getStateAggregates(), []);
+  const availableMinistries = useMemo(() => {
+    return ministriesData && ministriesData.length > 0 ? ministriesData : MINISTRIES_DATA;
+  }, [ministriesData]);
+
+  // Dynamically extract real active sectors from source projects
+  const availableSectors = useMemo(() => {
+    const counts = {};
+    const costs = {};
+    sourceProjects.forEach(p => {
+      const sec = p.sector?.trim() || 'Other Infrastructure';
+      counts[sec] = (counts[sec] || 0) + 1;
+      costs[sec] = (costs[sec] || 0) + (p.currentCost || p.approvedCost || 0);
+    });
+
+    return Object.keys(counts).sort().map(sec => ({
+      name: sec,
+      count: counts[sec],
+      totalCostCr: costs[sec]
+    }));
+  }, [sourceProjects]);
+
+  const localStateAggregates = useMemo(() => getStateAggregates(), []);
+  const stateAggregates = dbStateAggregates || localStateAggregates;
+
+  const availableStates = useMemo(() => {
+    if (stateAggregates && Object.keys(stateAggregates).length > 0) {
+      return Object.keys(stateAggregates).sort();
+    }
+    return LOCATIONS_LIST;
+  }, [stateAggregates]);
+
+  // Always start ProjectListing from the very top
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
+  useEffect(() => {
+    if (sourceProjects.length > 0 && !sourceProjects.find(p => p.id === activeProjectId)) {
+      setActiveProjectId(sourceProjects[0].id);
+    }
+  }, [sourceProjects, activeProjectId]);
+
+  // Sync stateFilter when selectedState prop changes
+  useEffect(() => {
+    if (selectedState) {
+      setStateFilter(selectedState);
+    } else {
+      setStateFilter('All');
+    }
+  }, [selectedState]);
+
+  // Sync ministryFilter when initialMinistry prop changes
+  useEffect(() => {
+    if (initialMinistry) {
+      setMinistryFilter(initialMinistry);
+      if (initialMinistry !== 'All') {
+        setGroupMode('ministry');
+        setSectorFilter('All');
+      }
+    }
+  }, [initialMinistry]);
+
+  // Sync sectorFilter when initialSector prop changes
+  useEffect(() => {
+    if (initialSector) {
+      setSectorFilter(initialSector);
+      if (initialSector !== 'All') {
+        setGroupMode('sector');
+        setMinistryFilter('All');
+      }
+    }
+  }, [initialSector]);
+
+  // Sync statusFilter when initialFilterStatus prop changes
+  useEffect(() => {
+    if (initialFilterStatus) {
+      setStatusFilter(initialFilterStatus);
+    }
+  }, [initialFilterStatus]);
+
+  // Sync searchQuery when initialSearchQuery prop changes
+  useEffect(() => {
+    if (initialSearchQuery !== undefined) {
+      setSearchQuery(initialSearchQuery);
+    }
+  }, [initialSearchQuery]);
 
   // Filtered Projects Logic based on multi-tiered hierarchy
   const filteredProjects = useMemo(() => {
-    return PROJECTS_MASTER.filter(p => {
-      // Search
+    return sourceProjects.filter(p => {
+      // Search matching Name and PAIMANA ID
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesName = p.name.toLowerCase().includes(q);
-        const matchesId = p.id.toLowerCase().includes(q);
-        const matchesState = p.state.toLowerCase().includes(q);
-        const matchesMinistry = p.ministry.toLowerCase().includes(q);
+        const q = searchQuery.toLowerCase().trim();
+        const matchesName = (p.name || '').toLowerCase().includes(q) || (p.shortName || '').toLowerCase().includes(q);
+        const matchesId = (p.id || '').toLowerCase().includes(q) || (p.rawId || '').toLowerCase().includes(q);
+        const matchesState = (p.state || '').toLowerCase().includes(q);
+        const matchesMinistry = (p.ministry || '').toLowerCase().includes(q);
         const matchesDept = (p.department || p.agency || '').toLowerCase().includes(q);
-        const matchesSector = p.sector.toLowerCase().includes(q);
+        const matchesSector = (p.sector || '').toLowerCase().includes(q);
         if (!matchesName && !matchesId && !matchesState && !matchesMinistry && !matchesDept && !matchesSector) return false;
       }
 
       // Group Mode specifics
       if (groupMode === 'ministry') {
-        if (ministryFilter !== 'All' && p.ministry !== ministryFilter && !p.ministry.includes(ministryFilter)) return false;
+        if (ministryFilter !== 'All') {
+          const mFilter = ministryFilter.toLowerCase().trim();
+          const pMin = (p.ministry || '').toLowerCase().trim();
+          if (!pMin.includes(mFilter) && !mFilter.includes(pMin)) return false;
+        }
       } else if (groupMode === 'sector') {
-        if (sectorFilter !== 'All' && p.sector !== sectorFilter && !p.sector.includes(sectorFilter)) return false;
+        if (sectorFilter !== 'All') {
+          const sFilter = sectorFilter.toLowerCase().trim();
+          const pSec = (p.sector || '').toLowerCase().trim();
+          if (!pSec.includes(sFilter) && !sFilter.includes(pSec)) return false;
+        }
       }
 
-      // State / Location
-      if (stateFilter !== 'All' && p.state !== stateFilter) return false;
+      // State / Location (case-insensitive & whitespace trimmed)
+      if (stateFilter !== 'All' && p.state?.toLowerCase().trim() !== stateFilter.toLowerCase().trim()) return false;
 
       // Status
       if (statusFilter !== 'All') {
@@ -114,7 +206,7 @@ export default function ProjectListing({
 
       return true;
     });
-  }, [searchQuery, groupMode, ministryFilter, sectorFilter, stateFilter, statusFilter, riskFilter]);
+  }, [sourceProjects, searchQuery, groupMode, ministryFilter, sectorFilter, stateFilter, statusFilter, riskFilter]);
 
   // Sync activeProjectId with filteredProjects
   useEffect(() => {
@@ -125,6 +217,17 @@ export default function ProjectListing({
       }
     }
   }, [filteredProjects, activeProjectId]);
+
+  // Visible count & pagination for Grid and Table modes
+  const [visibleCount, setVisibleCount] = useState(60);
+
+  useEffect(() => {
+    setVisibleCount(60);
+  }, [stateFilter, ministryFilter, sectorFilter, statusFilter, riskFilter, searchQuery]);
+
+  const displayedProjects = useMemo(() => {
+    return filteredProjects.slice(0, visibleCount);
+  }, [filteredProjects, visibleCount]);
 
   // Scroll Synchronization for Split View via IntersectionObserver
   useEffect(() => {
@@ -179,260 +282,235 @@ export default function ProjectListing({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         
         {/* ==================================================== */}
-        {/* HEADER & FILTER HIERARCHY BAR                        */}
+        {/* 1. UNIFIED SEARCH & FILTER CONTROL BAR               */}
         {/* ==================================================== */}
-        <div className="rounded-[12px] bg-white p-5 sm:p-6 border border-[#ebebeb] shadow-whisper space-y-4">
+        <div className="rounded-[16px] bg-white p-5 sm:p-6 border border-[#ebebeb] shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
           
-          {/* Top Title & Mode Selector Toggle */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#ebebeb] pb-4">
+          {/* Header Row: Title & Mode Toggle & Search */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-[#f1f5f9] pb-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="mono-eyebrow text-[10px] text-[#8f8f8f]">
-                  NATIONAL PORTFOLIO SURVEILLANCE
+                <span className="w-2 h-2 rounded-full bg-[#0070f3]"></span>
+                <span className="mono-eyebrow text-[10px] text-[#0070f3] font-bold">
+                  NATIONAL INFRASTRUCTURE SURVEILLANCE
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-semibold text-[#171717] tracking-[-0.8px]">
+              <h1 className="text-xl sm:text-2xl font-bold text-[#0f172a] tracking-tight">
                 Project Intelligence Directory
               </h1>
+              <p className="text-xs text-[#64748b] mt-0.5">
+                Authoritative MoSPI surveillance &amp; predictive early-warning across national portfolios.
+              </p>
             </div>
 
-            {/* [ MINISTRY-WISE ] [ SECTOR-WISE ] TOGGLE (6px square Geist app buttons) */}
-            <div className="flex p-0.5 rounded-[6px] bg-[#f2f2f2] border border-[#ebebeb]">
-              <button
-                onClick={() => {
-                  setGroupMode('ministry');
-                  setSectorFilter('All');
-                }}
-                className={`px-3 py-1.5 rounded-[4px] text-xs font-mono font-medium transition-all ${
-                  groupMode === 'ministry' 
-                    ? 'bg-[#171717] text-white shadow-xs' 
-                    : 'text-[#4d4d4d] hover:text-[#171717]'
-                }`}
-              >
-                MINISTRY VIEW
-              </button>
-              <button
-                onClick={() => {
-                  setGroupMode('sector');
-                  setMinistryFilter('All');
-                }}
-                className={`px-3 py-1.5 rounded-[4px] text-xs font-mono font-medium transition-all ${
-                  groupMode === 'sector' 
-                    ? 'bg-[#171717] text-white shadow-xs' 
-                    : 'text-[#4d4d4d] hover:text-[#171717]'
-                }`}
-              >
-                SECTOR VIEW
-              </button>
-            </div>
-          </div>
+            {/* Global Search & Reset */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="relative min-w-[260px] flex-1 sm:flex-initial">
+                <input
+                  type="text"
+                  placeholder="Search project name, ID, sector..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-[#f8fafc] text-xs text-[#0f172a] placeholder-[#94a3b8] rounded-lg pl-8 pr-7 py-2 border border-[#e2e8f0] focus:outline-none focus:border-[#0070f3] focus:bg-white transition-all"
+                />
+                <Search className="w-3.5 h-3.5 text-[#94a3b8] absolute left-2.5 top-2.5" />
+                {searchQuery && (
+                  <X 
+                    className="w-3.5 h-3.5 text-[#94a3b8] absolute right-2.5 top-2.5 cursor-pointer hover:text-[#0f172a]" 
+                    onClick={() => setSearchQuery('')}
+                  />
+                )}
+              </div>
 
-          {/* HIERARCHY TIER 1: CATEGORY TABS (64px rounded per Geist button-category-pill spec) */}
-          <div className="space-y-2">
-            <span className="mono-eyebrow text-[10px] text-[#8f8f8f] block">
-              {groupMode === 'ministry' ? 'FILTER BY MINISTRY' : 'FILTER BY SECTOR'}
-            </span>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                onClick={() => {
-                  if (groupMode === 'ministry') setMinistryFilter('All');
-                  else setSectorFilter('All');
-                }}
-                className={`px-3.5 py-1.5 rounded-[64px] text-xs font-medium transition-all ${
-                  (groupMode === 'ministry' ? ministryFilter === 'All' : sectorFilter === 'All')
-                    ? 'bg-[#171717] text-white shadow-xs'
-                    : 'bg-[#ffffff] text-[#4d4d4d] hover:text-[#171717] hover:bg-[#fafafa] border border-[#ebebeb]'
-                }`}
-              >
-                All {groupMode === 'ministry' ? 'Ministries' : 'Sectors'}
-              </button>
-
-              {groupMode === 'ministry' ? (
-                MINISTRIES_DATA.map(m => (
-                  <button
-                    key={m.id}
-                    onClick={() => setMinistryFilter(m.name)}
-                    className={`px-3.5 py-1.5 rounded-[64px] text-xs font-medium transition-all ${
-                      ministryFilter === m.name
-                        ? 'bg-[#171717] text-white shadow-xs'
-                        : 'bg-[#ffffff] text-[#4d4d4d] hover:text-[#171717] hover:bg-[#fafafa] border border-[#ebebeb]'
-                    }`}
-                  >
-                    {m.code}
-                  </button>
-                ))
-              ) : (
-                SECTORS_LIST.map(sec => (
-                  <button
-                    key={sec}
-                    onClick={() => setSectorFilter(sec)}
-                    className={`px-3.5 py-1.5 rounded-[64px] text-xs font-medium transition-all ${
-                      sectorFilter === sec
-                        ? 'bg-[#171717] text-white shadow-xs'
-                        : 'bg-[#ffffff] text-[#4d4d4d] hover:text-[#171717] hover:bg-[#fafafa] border border-[#ebebeb]'
-                    }`}
-                  >
-                    {sec}
-                  </button>
-                ))
+              {(searchQuery || stateFilter !== 'All' || ministryFilter !== 'All' || sectorFilter !== 'All' || statusFilter !== 'All') && (
+                <button
+                  onClick={handleResetFilters}
+                  className="flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-mono text-[#64748b] hover:text-[#0f172a] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors cursor-pointer"
+                  title="Reset all filters"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span className="hidden sm:inline">Reset</span>
+                </button>
               )}
             </div>
           </div>
 
-          {/* HIERARCHY TIER 2: LOCATION / STATE FILTER */}
-          <div className="space-y-2 pt-2 border-t border-[#ebebeb]">
-            <span className="mono-eyebrow text-[10px] text-[#8f8f8f] block">
-              LOCATION // STATE / UT
-            </span>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                onClick={() => {
-                  setStateFilter('All');
-                  if (onStateChange) onStateChange(null);
-                }}
-                className={`px-3 py-1 rounded-[6px] text-xs font-medium transition-all ${
-                  stateFilter === 'All'
-                    ? 'bg-[#171717] text-white shadow-xs'
-                    : 'bg-[#ffffff] text-[#4d4d4d] hover:text-[#171717] hover:bg-[#fafafa] border border-[#ebebeb]'
-                }`}
-              >
-                All States
-              </button>
-              {LOCATIONS_LIST.map(loc => (
+          {/* Interactive Filter Row: Segmented Controls & Dropdowns */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center pt-1">
+            
+            {/* Ministry / Sector Selector (6 Cols) */}
+            <div className="md:col-span-5 flex items-center gap-2">
+              <div className="flex p-0.5 rounded-lg bg-[#f1f5f9] border border-[#e2e8f0] shrink-0">
                 <button
-                  key={loc}
                   onClick={() => {
-                    setStateFilter(loc);
-                    if (onStateChange) onStateChange(loc);
+                    setGroupMode('ministry');
+                    setSectorFilter('All');
                   }}
-                  className={`px-3 py-1 rounded-[6px] text-xs font-medium transition-all ${
-                    stateFilter === loc
-                      ? 'bg-[#171717] text-white shadow-xs'
-                      : 'bg-[#ffffff] text-[#4d4d4d] hover:text-[#171717] hover:bg-[#fafafa] border border-[#ebebeb]'
+                  className={`px-2.5 py-1.5 rounded-md text-[11px] font-mono font-medium transition-all ${
+                    groupMode === 'ministry' 
+                      ? 'bg-white text-[#0f172a] shadow-xs font-semibold' 
+                      : 'text-[#64748b] hover:text-[#0f172a]'
                   }`}
                 >
-                  {loc}
+                  Ministry
+                </button>
+                <button
+                  onClick={() => {
+                    setGroupMode('sector');
+                    setMinistryFilter('All');
+                  }}
+                  className={`px-2.5 py-1.5 rounded-md text-[11px] font-mono font-medium transition-all ${
+                    groupMode === 'sector' 
+                      ? 'bg-white text-[#0f172a] shadow-xs font-semibold' 
+                      : 'text-[#64748b] hover:text-[#0f172a]'
+                  }`}
+                >
+                  Sector
+                </button>
+              </div>
+
+              {groupMode === 'ministry' ? (
+                <select
+                  value={ministryFilter}
+                  onChange={(e) => setMinistryFilter(e.target.value)}
+                  className="w-full text-xs bg-[#f8fafc] text-[#0f172a] p-2 rounded-lg border border-[#e2e8f0] focus:outline-none focus:border-[#0070f3] font-sans truncate"
+                >
+                  <option value="All">All Ministries ({sourceProjects.length} Projects)</option>
+                  {availableMinistries.map(m => {
+                    const count = sourceProjects.filter(p => (p.ministry || '').toLowerCase().includes((m.name || m.code).toLowerCase())).length;
+                    return (
+                      <option key={m.id || m.code} value={m.name}>
+                        {m.name} ({count})
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : (
+                <select
+                  value={sectorFilter}
+                  onChange={(e) => setSectorFilter(e.target.value)}
+                  className="w-full text-xs bg-[#f8fafc] text-[#0f172a] p-2 rounded-lg border border-[#e2e8f0] focus:outline-none focus:border-[#0070f3] font-sans truncate"
+                >
+                  <option value="All">All Sectors ({sourceProjects.length} Projects)</option>
+                  {availableSectors.map(sec => (
+                    <option key={sec.name} value={sec.name}>
+                      {sec.name} ({sec.count})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* State Filter (3 Cols) */}
+            <div className="md:col-span-3">
+              <select
+                value={stateFilter || 'All'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setStateFilter(val);
+                  if (onStateChange) onStateChange(val === 'All' ? null : val);
+                }}
+                className="w-full text-xs bg-[#f8fafc] text-[#0f172a] p-2 rounded-lg border border-[#e2e8f0] focus:outline-none focus:border-[#0070f3] font-sans"
+              >
+                <option value="All">All States / UTs (National)</option>
+                {availableStates.map(loc => {
+                  const count = sourceProjects.filter(p => (p.state || '').toLowerCase() === loc.toLowerCase()).length;
+                  return (
+                    <option key={loc} value={loc}>
+                      {loc} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {/* Execution Status Pills (4 Cols) */}
+            <div className="md:col-span-4 flex items-center justify-start md:justify-end gap-1 overflow-x-auto no-scrollbar py-0.5">
+              {[
+                { id: 'All', label: 'All' },
+                { id: 'Ongoing', label: 'Ongoing' },
+                { id: 'Delayed', label: 'Delayed' },
+                { id: 'HighRisk', label: 'High Risk' },
+                { id: 'Completed', label: 'Completed' }
+              ].map(st => (
+                <button
+                  key={st.id}
+                  onClick={() => setStatusFilter(st.id)}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all cursor-pointer ${
+                    statusFilter === st.id
+                      ? 'bg-[#0f172a] text-white shadow-xs font-semibold'
+                      : 'bg-[#f1f5f9] text-[#64748b] hover:text-[#0f172a] hover:bg-[#e2e8f0]'
+                  }`}
+                >
+                  {st.label}
                 </button>
               ))}
             </div>
-          </div>
 
-          {/* HIERARCHY TIER 3: PROJECT STATUS & SEARCH */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2 border-t border-[#ebebeb]">
-            <div className="space-y-1.5">
-              <span className="mono-eyebrow text-[10px] text-[#8f8f8f] block">
-                EXECUTION STATUS
-              </span>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {[
-                  { id: 'All', label: 'All Projects' },
-                  { id: 'Ongoing', label: 'Ongoing' },
-                  { id: 'Completed', label: 'Completed' },
-                  { id: 'Delayed', label: 'Delayed' },
-                  { id: 'HighRisk', label: 'High Risk' }
-                ].map(st => (
-                  <button
-                    key={st.id}
-                    onClick={() => setStatusFilter(st.id)}
-                    className={`px-3 py-1 rounded-[6px] text-xs font-medium transition-all ${
-                      statusFilter === st.id
-                        ? 'bg-[#171717] text-white shadow-xs'
-                        : 'bg-[#ffffff] text-[#4d4d4d] hover:text-[#171717] hover:bg-[#fafafa] border border-[#ebebeb]'
-                    }`}
-                  >
-                    {st.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Keyword Search Input (Geist 6px rounded field) */}
-            <div className="relative min-w-[240px]">
-              <input
-                type="text"
-                placeholder="Search ID, Name, Agency..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white text-xs text-[#171717] placeholder-[#8f8f8f] rounded-[6px] pl-8 pr-3 py-2 border border-[#ebebeb] focus:outline-none focus:border-[#171717] shadow-whisper"
-              />
-              <Search className="w-3.5 h-3.5 text-[#8f8f8f] absolute left-2.5 top-2.5" />
-              {searchQuery && (
-                <X 
-                  className="w-3.5 h-3.5 text-[#8f8f8f] absolute right-2.5 top-2.5 cursor-pointer hover:text-[#171717]" 
-                  onClick={() => setSearchQuery('')}
-                />
-              )}
-            </div>
           </div>
 
         </div>
 
         {/* ==================================================== */}
-        {/* DASHBOARD SUMMARY PANEL (COMPACT CALCULATED METRICS) */}
+        {/* 2. COMPACT PORTFOLIO TELEMETRY HUD STRIP             */}
         {/* ==================================================== */}
-        <div className="rounded-[12px] bg-white p-5 border border-[#ebebeb] shadow-whisper space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="mono-eyebrow text-[#8f8f8f] flex items-center gap-1.5">
-              <BarChart3 className="w-3.5 h-3.5 text-[#171717]" />
-              ACTIVE FILTER METRIC AGGREGATION
-            </h3>
-            <button
-              onClick={handleResetFilters}
-              className="text-xs text-[#4d4d4d] hover:text-[#171717] flex items-center gap-1 font-mono transition-colors"
-            >
-              <RotateCcw className="w-3 h-3" />
-              Reset Filters
-            </button>
-          </div>
-
-          {/* Counts & Costs Grid - Geist Minimal Boxes */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3 rounded-[6px] bg-[#fafafa] border border-[#ebebeb]">
-              <p className="mono-eyebrow text-[9px] text-[#8f8f8f]">TOTAL PROJECTS</p>
-              <p className="text-xl font-semibold text-[#171717] font-mono mt-0.5">{summary.totalProjects}</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          
+          <div className="p-4 rounded-xl bg-white border border-[#ebebeb] shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-1">
+            <span className="mono-eyebrow text-[9px] text-[#64748b] block font-semibold">FILTERED PORTFOLIO</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-bold font-mono text-[#0f172a]">{summary.totalProjects}</span>
+              <span className="text-[11px] text-[#64748b] font-mono">Projects</span>
             </div>
-            <div className="p-3 rounded-[6px] bg-[#fafafa] border border-[#ebebeb]">
-              <p className="mono-eyebrow text-[9px] text-[#8f8f8f]">ONGOING</p>
-              <p className="text-xl font-semibold text-[#0070f3] font-mono mt-0.5">{summary.ongoing}</p>
-            </div>
-            <div className="p-3 rounded-[6px] bg-[#fafafa] border border-[#ebebeb]">
-              <p className="mono-eyebrow text-[9px] text-[#8f8f8f]">COMPLETED</p>
-              <p className="text-xl font-semibold text-emerald-600 font-mono mt-0.5">{summary.completed}</p>
-            </div>
-            <div className="p-3 rounded-[6px] bg-[#fafafa] border border-[#ebebeb]">
-              <p className="mono-eyebrow text-[9px] text-[#8f8f8f]">DELAYED</p>
-              <p className="text-xl font-semibold text-amber-600 font-mono mt-0.5">{summary.delayed}</p>
+            <div className="flex items-center gap-2 text-[10px] font-mono text-[#64748b] pt-0.5">
+              <span className="text-[#0070f3] font-semibold">{summary.ongoing} Ongoing</span>
+              <span>•</span>
+              <span className="text-emerald-700 font-semibold">{summary.completed} Completed</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="p-3 rounded-[6px] bg-[#fafafa] border border-[#ebebeb]">
-              <p className="mono-eyebrow text-[9px] text-[#8f8f8f]">ORIGINAL ESTIMATE</p>
-              <p className="text-base font-semibold font-mono text-[#171717] mt-0.5">₹{summary.totalOriginalCost.toLocaleString()} Cr</p>
+          <div className="p-4 rounded-xl bg-white border border-[#ebebeb] shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-1">
+            <span className="mono-eyebrow text-[9px] text-[#64748b] block font-semibold">BOTTLENECK EXPOSURE</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-bold font-mono text-amber-700">{summary.delayed}</span>
+              <span className="text-[11px] text-[#64748b] font-mono">Delayed</span>
             </div>
-            <div className="p-3 rounded-[6px] bg-[#fafafa] border border-[#ebebeb]">
-              <p className="mono-eyebrow text-[9px] text-[#8f8f8f]">REVISED EXPOSURE</p>
-              <p className="text-base font-semibold font-mono text-[#171717] mt-0.5">₹{summary.totalRevisedCost.toLocaleString()} Cr</p>
-            </div>
-            <div className="p-3 rounded-[6px] bg-[#fafafa] border border-[#ebebeb]">
-              <p className="mono-eyebrow text-[9px] text-[#8f8f8f]">TOTAL EXPENDITURE</p>
-              <p className="text-base font-semibold font-mono text-[#0070f3] mt-0.5">₹{summary.totalExpenditure.toLocaleString()} Cr</p>
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-rose-600 font-semibold pt-0.5">
+              <span>{filteredProjects.filter(p => p.riskLevel === 'Critical' || p.riskLevel === 'High').length} High-Risk Monitored</span>
             </div>
           </div>
 
-          {/* Average Physical Progress Bar */}
-          <div className="p-3 rounded-[6px] bg-[#fafafa] border border-[#ebebeb] space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="mono-eyebrow text-[10px] text-[#8f8f8f]">AVERAGE PHYSICAL COMPLETION</span>
-              <span className="font-semibold text-[#171717]">{summary.averageProgress}%</span>
+          <div className="p-4 rounded-xl bg-white border border-[#ebebeb] shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-1">
+            <span className="mono-eyebrow text-[9px] text-[#64748b] block font-semibold">CAPITAL EXPOSURE</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl font-bold font-mono text-[#0f172a]">₹{Math.round(summary.totalRevisedCost).toLocaleString()}</span>
+              <span className="text-[11px] text-[#64748b] font-mono">Cr</span>
             </div>
-            <div className="w-full h-1.5 rounded-full bg-[#ebebeb] overflow-hidden">
+            <div className="text-[10px] font-mono text-[#64748b] pt-0.5 truncate">
+              {summary.totalRevisedCost > summary.totalOriginalCost ? (
+                <span className="text-rose-600 font-semibold">
+                  +₹{Math.round(summary.totalRevisedCost - summary.totalOriginalCost).toLocaleString()} Cr Overrun
+                </span>
+              ) : (
+                <span className="text-emerald-700">Within Sanctions</span>
+              )}
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-white border border-[#ebebeb] shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="mono-eyebrow text-[9px] text-[#64748b] block font-semibold">AVERAGE PROGRESS</span>
+              <span className="text-xs font-mono font-bold text-[#0070f3]">{summary.averageProgress}%</span>
+            </div>
+            <div className="w-full h-2 rounded-full bg-[#f1f5f9] overflow-hidden">
               <div 
-                className="h-full rounded-full bg-[#171717] transition-all duration-500"
+                className="h-full rounded-full bg-[#0070f3] transition-all duration-500"
                 style={{ width: `${summary.averageProgress}%` }}
               />
             </div>
+            <span className="text-[10px] text-[#64748b] font-mono block">Across active filter selection</span>
           </div>
+
         </div>
 
         {/* ==================================================== */}
@@ -444,7 +522,7 @@ export default function ProjectListing({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4">
             <div>
               <span className="text-xs font-mono text-[#8f8f8f]">
-                DISPLAYING <strong className="text-[#171717]">{filteredProjects.length}</strong> PROJECTS
+                SHOWING <strong className="text-[#171717]">{viewMode === 'split' ? filteredProjects.length : displayedProjects.length}</strong> OF <strong className="text-[#171717]">{filteredProjects.length}</strong> PROJECTS {stateFilter !== 'All' ? `IN ${stateFilter.toUpperCase()}` : ''} {groupMode === 'ministry' && ministryFilter !== 'All' ? `• ${ministryFilter}` : ''} {groupMode === 'sector' && sectorFilter !== 'All' ? `• Sector: ${sectorFilter}` : ''}
               </span>
             </div>
 
@@ -494,7 +572,7 @@ export default function ProjectListing({
               <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
               <h3 className="text-base font-semibold text-[#171717]">No Projects Match Selected Filters</h3>
               <p className="text-xs text-[#4d4d4d] max-w-md mx-auto font-normal">
-                Try resetting or choosing a different Ministry, Sector, or Location.
+                Try searching by PAIMANA ID, project name, or resetting the ministry/state filter.
               </p>
               <button
                 onClick={handleResetFilters}
@@ -505,7 +583,7 @@ export default function ProjectListing({
             </div>
           )}
 
-          {/* SIDE-BY-SIDE SCROLL-SYNCHRONIZED INSPECTOR VIEW (HIGH-PERFORMANCE FRAMER MOTION) */}
+          {/* SIDE-BY-SIDE SCROLL-SYNCHRONIZED INSPECTOR VIEW */}
           {viewMode === 'split' && filteredProjects.length > 0 && (
             <ProjectSplitSection
               projects={filteredProjects}
@@ -515,8 +593,9 @@ export default function ProjectListing({
 
           {/* GRID CARDS VIEW */}
           {viewMode === 'grid' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredProjects.map((prj) => {
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {displayedProjects.map((prj) => {
                 const origCost = prj.approvedCost || prj.estimatedCost || 0;
                 const revCost = prj.currentCost || origCost;
                 const expCost = prj.expenditure !== undefined ? prj.expenditure : Math.round(revCost * ((prj.progressPercent || 0) / 100));
@@ -528,24 +607,31 @@ export default function ProjectListing({
                   >
                     <div className="space-y-3">
                       
-                      {/* Row 1: Project ID & Badges */}
+                      {/* Row 1: Project ID & Current Delay Badge */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-xs font-semibold bg-[#f2f2f2] text-[#171717] px-2.5 py-0.5 rounded-[4px] border border-[#ebebeb]">
-                          {prj.id}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-xs font-bold bg-[#171717] text-white px-2.5 py-0.5 rounded-[4px]">
+                            {prj.id}
+                          </span>
+                          {prj.rawId && prj.rawId !== prj.id && (
+                            <span className="font-mono text-[10px] text-[#8f8f8f] bg-[#f2f2f2] px-1.5 py-0.5 rounded border border-[#ebebeb]">
+                              ID: {prj.rawId}
+                            </span>
+                          )}
+                        </div>
 
                         <div className="flex items-center gap-1.5">
+                          <span className={`px-2 py-0.5 rounded-[4px] text-[10px] font-mono font-semibold ${
+                            prj.timeDelayMonths > 0 
+                              ? 'bg-[#fffbeb] text-amber-800 border border-[#fde68a]' 
+                              : 'bg-[#f0fdf4] text-emerald-800 border border-[#bbf7d0]'
+                          }`}>
+                            {prj.timeDelayMonths > 0 ? `+${prj.timeDelayMonths}m Delay` : 'On-Time'}
+                          </span>
+
                           <span className="flex items-center gap-1 text-xs text-[#4d4d4d] bg-[#fafafa] px-2 py-0.5 rounded-[4px] border border-[#ebebeb]">
                             <MapPin className="w-3 h-3 text-[#0070f3]" />
                             {prj.state}
-                          </span>
-
-                          <span className={`px-2 py-0.5 rounded-[4px] text-[10px] font-mono font-semibold uppercase ${
-                            prj.status === 'Completed' ? 'bg-[#f0fdf4] text-emerald-700 border border-[#bbf7d0]' :
-                            prj.status === 'Delayed' ? 'bg-[#fffbeb] text-amber-700 border border-[#fde68a]' :
-                            'bg-[#eff6ff] text-[#0070f3] border border-[#bfdbfe]'
-                          }`}>
-                            {prj.status}
                           </span>
                         </div>
                       </div>
@@ -566,12 +652,14 @@ export default function ProjectListing({
                           <span className="font-medium text-[#171717] line-clamp-1">{prj.ministry}</span>
                         </div>
                         <div>
-                          <span className="mono-eyebrow text-[9px] text-[#8f8f8f] block">Agency</span>
-                          <span className="font-medium text-[#171717] line-clamp-1">{prj.department || prj.agency}</span>
+                          <span className="mono-eyebrow text-[9px] text-[#8f8f8f] block">Total Cost (Latest)</span>
+                          <span className="font-bold text-[#171717] font-mono line-clamp-1">₹{revCost.toLocaleString()} Cr</span>
                         </div>
                         <div>
-                          <span className="mono-eyebrow text-[9px] text-[#8f8f8f] block">Location</span>
-                          <span className="font-medium text-[#171717] line-clamp-1">{prj.state}</span>
+                          <span className="mono-eyebrow text-[9px] text-[#8f8f8f] block">Current Delay</span>
+                          <span className="font-semibold text-amber-700 font-mono line-clamp-1">
+                            {prj.timeDelayMonths > 0 ? `+${prj.timeDelayMonths} Months` : '0 Months (On-Time)'}
+                          </span>
                         </div>
                       </div>
 
@@ -582,8 +670,8 @@ export default function ProjectListing({
                           <p className="font-semibold font-mono text-xs text-[#171717]">₹{origCost.toLocaleString()} Cr</p>
                         </div>
                         <div>
-                          <p className="mono-eyebrow text-[8px] text-[#8f8f8f]">REVISED</p>
-                          <p className="font-semibold font-mono text-xs text-amber-700">₹{revCost.toLocaleString()} Cr</p>
+                          <p className="mono-eyebrow text-[8px] text-[#8f8f8f]">TOTAL COST</p>
+                          <p className="font-bold font-mono text-xs text-amber-700">₹{revCost.toLocaleString()} Cr</p>
                         </div>
                         <div>
                           <p className="mono-eyebrow text-[8px] text-[#8f8f8f]">EXPENDITURE</p>
@@ -608,22 +696,6 @@ export default function ProjectListing({
                         </div>
                       </div>
 
-                      {/* Timeline Dates Row */}
-                      <div className="grid grid-cols-3 gap-1 pt-1 text-[10px] text-[#8f8f8f] font-mono border-t border-[#ebebeb]">
-                        <div>
-                          <span className="text-[#8f8f8f] block">Start</span>
-                          <span className="font-medium text-[#171717]">{prj.startDate}</span>
-                        </div>
-                        <div>
-                          <span className="text-[#8f8f8f] block">Target</span>
-                          <span className="font-medium text-[#171717]">{prj.targetCompletion}</span>
-                        </div>
-                        <div>
-                          <span className="text-[#8f8f8f] block">Expected</span>
-                          <span className="font-medium text-amber-700">{prj.expectedCompletion}</span>
-                        </div>
-                      </div>
-
                     </div>
 
                     {/* View Details Action Button (Geist 6px rounded) */}
@@ -631,7 +703,7 @@ export default function ProjectListing({
                       onClick={() => onSelectProject(prj.id)}
                       className="w-full btn-app-sm bg-[#171717] hover:bg-[#333333] text-white text-xs font-medium justify-center gap-1.5"
                     >
-                      <span>Inspect Project Dossier</span>
+                      <span>Inspect Project Dossier &amp; 18M Forecast</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
 
@@ -639,73 +711,90 @@ export default function ProjectListing({
                 );
               })}
             </div>
-          )}
 
-          {/* TABLE VIEW (HORIZONTALLY SCROLLABLE) */}
-          {viewMode === 'table' && (
+            {filteredProjects.length > visibleCount && (
+              <div className="flex items-center justify-center gap-3 pt-4 pb-2">
+                <button
+                  onClick={() => setVisibleCount(c => c + 60)}
+                  className="btn-app-sm bg-[#171717] hover:bg-[#333333] text-white text-xs font-mono font-medium px-6 py-2.5 rounded-[6px] shadow-xs cursor-pointer transition-all"
+                >
+                  Load Next 60 Projects ({filteredProjects.length - visibleCount} remaining)
+                </button>
+                <button
+                  onClick={() => setVisibleCount(filteredProjects.length)}
+                  className="btn-app-ghost text-xs font-mono font-medium px-4 py-2.5 rounded-[6px] cursor-pointer"
+                >
+                  Show All ({filteredProjects.length})
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TABLE VIEW (HORIZONTALLY SCROLLABLE) */}
+        {viewMode === 'table' && (
+          <div className="space-y-4">
             <div className="rounded-[12px] bg-white border border-[#ebebeb] overflow-hidden shadow-whisper">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-[#171717] min-w-[1100px]">
                   <thead className="bg-[#fafafa] text-[#8f8f8f] font-mono uppercase text-[10px] border-b border-[#ebebeb]">
                     <tr>
                       <th className="py-3 px-3">Project ID</th>
-                      <th className="py-3 px-3">Sector</th>
+                      <th className="py-3 px-3">Project Name</th>
                       <th className="py-3 px-3">Ministry</th>
-                      <th className="py-3 px-3">Agency</th>
                       <th className="py-3 px-3">Location</th>
-                      <th className="py-3 px-3">Original Cost</th>
-                      <th className="py-3 px-3">Revised Cost</th>
-                      <th className="py-3 px-3">Expenditure</th>
-                      <th className="py-3 px-3">Start Date</th>
-                      <th className="py-3 px-3">Orig Comp</th>
-                      <th className="py-3 px-3">Rev Comp</th>
+                      <th className="py-3 px-3">Total Cost (₹ Cr)</th>
+                      <th className="py-3 px-3">Current Delay</th>
                       <th className="py-3 px-3">Progress</th>
+                      <th className="py-3 px-3">Status / Risk</th>
                       <th className="py-3 px-3 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#ebebeb] text-xs">
-                    {filteredProjects.map((prj) => {
+                    {displayedProjects.map((prj) => {
                       const origCost = prj.approvedCost || prj.estimatedCost || 0;
                       const revCost = prj.currentCost || origCost;
-                      const expCost = prj.expenditure !== undefined ? prj.expenditure : Math.round(revCost * ((prj.progressPercent || 0) / 100));
 
                       return (
                         <tr key={prj.id} className="hover:bg-[#fafafa] transition-colors">
                           <td className="py-2.5 px-3 font-mono font-semibold text-[#171717]">
-                            {prj.id}
+                            <div>{prj.id}</div>
+                            {prj.rawId && prj.rawId !== prj.id && (
+                              <div className="text-[10px] text-[#8f8f8f]">({prj.rawId})</div>
+                            )}
                           </td>
-                          <td className="py-2.5 px-3 text-[#171717]">
-                            {prj.sector}
+                          <td className="py-2.5 px-3 font-medium text-[#171717] max-w-[280px]">
+                            <p className="line-clamp-2 leading-snug">{prj.name}</p>
                           </td>
                           <td className="py-2.5 px-3 text-[#4d4d4d] max-w-[160px] truncate" title={prj.ministry}>
                             {prj.ministry}
                           </td>
-                          <td className="py-2.5 px-3 text-[#4d4d4d] max-w-[150px] truncate" title={prj.department}>
-                            {prj.department || prj.agency}
-                          </td>
                           <td className="py-2.5 px-3 text-[#171717]">
                             {prj.state}
                           </td>
-                          <td className="py-2.5 px-3 font-mono font-medium text-[#171717]">
-                            ₹{origCost.toLocaleString()} Cr
-                          </td>
-                          <td className="py-2.5 px-3 font-mono font-medium text-amber-700">
+                          <td className="py-2.5 px-3 font-mono font-bold text-[#171717]">
                             ₹{revCost.toLocaleString()} Cr
                           </td>
-                          <td className="py-2.5 px-3 font-mono font-medium text-[#0070f3]">
-                            ₹{expCost.toLocaleString()} Cr
-                          </td>
-                          <td className="py-2.5 px-3 font-mono text-[#8f8f8f]">
-                            {prj.startDate}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono text-[#8f8f8f]">
-                            {prj.targetCompletion}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono text-amber-700">
-                            {prj.expectedCompletion}
+                          <td className="py-2.5 px-3 font-mono">
+                            <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                              prj.timeDelayMonths > 0 
+                                ? 'bg-[#fffbeb] text-amber-800 border border-[#fde68a]' 
+                                : 'bg-[#f0fdf4] text-emerald-800 border border-[#bbf7d0]'
+                            }`}>
+                              {prj.timeDelayMonths > 0 ? `+${prj.timeDelayMonths}m` : '0m (On-Time)'}
+                            </span>
                           </td>
                           <td className="py-2.5 px-3 font-mono">
                             <span className="font-semibold text-[#171717]">{prj.progressPercent}%</span>
+                          </td>
+                          <td className="py-2.5 px-3 font-mono">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
+                              prj.riskLevel === 'Critical' ? 'bg-[#fff0f0] text-rose-700 border border-[#ffd5d5]' :
+                              prj.riskLevel === 'High' ? 'bg-[#fff8f0] text-amber-700 border border-[#ffe4cc]' :
+                              'bg-[#f0fdf4] text-emerald-700 border border-[#bbf7d0]'
+                            }`}>
+                              {prj.riskLevel} ({prj.riskScore || 0})
+                            </span>
                           </td>
                           <td className="py-2.5 px-3 text-right">
                             <button
@@ -722,6 +811,26 @@ export default function ProjectListing({
                 </table>
               </div>
             </div>
+
+            {filteredProjects.length > visibleCount && (
+              <div className="flex items-center justify-center gap-3 pt-2 pb-2">
+                <button
+                  onClick={() => setVisibleCount(c => c + 60)}
+                  className="btn-app-sm bg-[#171717] hover:bg-[#333333] text-white text-xs font-mono font-medium px-6 py-2.5 rounded-[6px] shadow-xs cursor-pointer transition-all"
+                >
+                  Load Next 60 Projects ({filteredProjects.length - visibleCount} remaining)
+                </button>
+                <button
+                  onClick={() => setVisibleCount(filteredProjects.length)}
+                  className="btn-app-ghost text-xs font-mono font-medium px-4 py-2.5 rounded-[6px] cursor-pointer"
+                >
+                  Show All ({filteredProjects.length})
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         </div>
 
       </div>

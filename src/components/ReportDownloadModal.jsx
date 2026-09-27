@@ -152,7 +152,7 @@ export default function ReportDownloadModal({ project, isOpen, onClose, selected
         <div className="pt-3 border-t border-[#ebebeb] flex items-center justify-between text-[11px] text-[#8f8f8f] font-mono">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            <span>MoSPI DRISHTI-PAIMANA PLATFORM</span>
+            <span>MoSPI PAIMANA PLATFORM</span>
           </div>
           <span>GOVERNMENT OF INDIA</span>
         </div>
