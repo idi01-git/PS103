@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import { getStateAggregates } from '../data/projectsData';
 import indiaGeoJson from '../data/india.json';
 import { MOTION_TOKENS, getPrefersReducedMotion } from '../utils/motionTokens';
-import { MapPin, Info, ArrowRight, X, AlertTriangle, ShieldAlert, CheckCircle, Clock, Layers, ChevronDown, BarChart3, TrendingUp, Sparkles } from 'lucide-react';
+import { MapPin, Info, ArrowRight, AlertTriangle, ShieldAlert, CheckCircle, Clock, Layers, ChevronDown, BarChart3, TrendingUp } from 'lucide-react';
 
 // Format Indian Currency in Crores / Lakh Crores for professional readability
 export function formatStateCost(costInCr) {
@@ -177,8 +177,6 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
   const [activeMobileState, setActiveMobileState] = useState(null);
   const [dimensions, setDimensions] = useState({ width: 680, height: 470 });
   const [ripplePoint, setRipplePoint] = useState(null);
-  const [zoomTransform, setZoomTransform] = useState({ k: 1, x: 0, y: 0 });
-  const [zoomedState, setZoomedState] = useState(null);
   const [isEntranceDone, setIsEntranceDone] = useState(false);
 
   // Spring positioning for floating card
@@ -269,17 +267,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Keyboard Escape listener to smoothly reset cinematic zoom
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && zoomedState) {
-        setZoomTransform({ k: 1, x: 0, y: 0 });
-        setZoomedState(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [zoomedState]);
+
 
   // Spring animation loop for floating info card gliding
   const updateCardPosition = useCallback(() => {
@@ -358,36 +346,6 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
     return d3.geoPath().projection(projection);
   }, [projection]);
 
-  // State Bounding Boxes Lookup
-  const stateBoundsMap = useMemo(() => {
-    if (!indiaGeoJson || !pathGenerator) return {};
-    const boundsMap = {};
-
-    indiaGeoJson.features.forEach(feat => {
-      const rawName = feat.properties?.st_nm;
-      if (!rawName) return;
-      const stName = normalizeGeoStateName(rawName);
-      const b = pathGenerator.bounds(feat);
-      if (!b || isNaN(b[0][0])) return;
-
-      if (!boundsMap[stName]) {
-        boundsMap[stName] = {
-          x0: b[0][0],
-          y0: b[0][1],
-          x1: b[1][0],
-          y1: b[1][1]
-        };
-      } else {
-        boundsMap[stName].x0 = Math.min(boundsMap[stName].x0, b[0][0]);
-        boundsMap[stName].y0 = Math.min(boundsMap[stName].y0, b[0][1]);
-        boundsMap[stName].x1 = Math.max(boundsMap[stName].x1, b[1][0]);
-        boundsMap[stName].y1 = Math.max(boundsMap[stName].y1, b[1][1]);
-      }
-    });
-
-    return boundsMap;
-  }, [pathGenerator]);
-
   // State Centroids map
   const stateCentroids = useMemo(() => {
     if (!indiaGeoJson || !pathGenerator || !projection) return {};
@@ -404,39 +362,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
     return centroids;
   }, [pathGenerator, projection]);
 
-  // Zoom specifically to a target state's bounding box with cinematic camera easing
-  const zoomToState = useCallback((stateName) => {
-    if (!stateName) {
-      setZoomTransform({ k: 1, x: 0, y: 0 });
-      setZoomedState(null);
-      return;
-    }
-
-    const normName = normalizeGeoStateName(stateName);
-    const bounds = stateBoundsMap[normName] || stateBoundsMap[stateName];
-    const canvasW = dimensions.width;
-    const canvasH = dimensions.height - 24;
-
-    if (bounds && canvasW && canvasH) {
-      const stateW = Math.max(bounds.x1 - bounds.x0, 20);
-      const stateH = Math.max(bounds.y1 - bounds.y0, 20);
-      const centerX = (bounds.x0 + bounds.x1) / 2;
-      const centerY = (bounds.y0 + bounds.y1) / 2;
-
-      // Cinematic framing: leaves room for the state Dossier reveal HUD
-      const targetScale = Math.max(1.8, Math.min(5.2, 0.58 / Math.max(stateW / canvasW, stateH / canvasH)));
-      const targetX = (canvasW / 2) - targetScale * centerX;
-      const targetY = (canvasH / 2) - targetScale * centerY;
-
-      setZoomTransform({ k: targetScale, x: targetX, y: targetY });
-      setZoomedState(normName);
-    } else {
-      setZoomTransform({ k: 2.2, x: 0, y: 0 });
-      setZoomedState(normName);
-    }
-  }, [stateBoundsMap, dimensions]);
-
-  // Handle State Click: Smooth movie-like zoom fly-in to reveal state dossier HUD
+  // Handle State Click: Select state and navigate directly to its filtered project portfolio
   const handleStateClick = useCallback((stateName, event) => {
     if (event) {
       event.stopPropagation();
@@ -450,22 +376,10 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
     }
 
     const canonicalState = normalizeGeoStateName(stateName);
-
-    // Multi-State has no geographic polygon, navigate directly
-    if (canonicalState === 'Multi-State') {
-      if (onSelectState) onSelectState('Multi-State');
-      return;
+    if (onSelectState) {
+      onSelectState(canonicalState);
     }
-
-    // If clicking an already zoomed state, navigate to its project directory
-    if (zoomedState === canonicalState) {
-      if (onSelectState) onSelectState(canonicalState);
-      return;
-    }
-
-    // Smoothly fly camera into the clicked state boundary and reveal state dossier
-    zoomToState(canonicalState);
-  }, [zoomedState, zoomToState, onSelectState]);
+  }, [onSelectState]);
 
   // Current Hovered Data Object for Floating Card
   const hoveredData = useMemo(() => {
@@ -517,19 +431,9 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
               Interactive India Project Map
             </h2>
             <p className="text-xs text-[#64748b] mt-0.5 font-normal">
-              Hover over any state to inspect telemetry and auto-focus. Click any state row to view matched projects.
+              Hover over any state to inspect telemetry. Click any state or ranking to view projects.
             </p>
           </div>
-
-          {zoomedState && (
-            <button
-              onClick={() => zoomToState(null)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-md shadow-xs transition-colors self-start md:self-auto cursor-pointer"
-            >
-              <span>Reset National View</span>
-              <X className="w-3.5 h-3.5 text-slate-500" />
-            </button>
-          )}
         </div>
 
         {/* Main 2-Column Map & Sidebar Layout */}
@@ -563,23 +467,8 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
               className="w-full h-auto max-h-[460px] outline-none focus:outline-none select-none"
               style={{ outline: 'none' }}
             >
-              {/* Clickable Background Rect to Smoothly Reset Zoom when clicking outside */}
-              <rect 
-                width={dimensions.width} 
-                height={dimensions.height} 
-                fill="transparent" 
-                onClick={() => zoomToState(null)} 
-                style={{ cursor: zoomedState ? 'zoom-out' : 'default' }}
-              />
-
-              {/* Main Map Group with Buttery 850ms Cinematic GPU Viewport Transform */}
-              <g
-                style={{
-                  transform: `translate(${zoomTransform.x}px, ${zoomTransform.y}px) scale(${zoomTransform.k})`,
-                  transformOrigin: '0 0',
-                  transition: getPrefersReducedMotion() ? 'none' : 'transform 850ms cubic-bezier(0.16, 1, 0.3, 1)'
-                }}
-              >
+              {/* Main Map Group */}
+              <g>
                 {/* State Polygon Paths */}
                 {indiaGeoJson && indiaGeoJson.features && indiaGeoJson.features.map((feat, idx) => {
                   const rawName = feat.properties.st_nm;
@@ -587,8 +476,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                   const stData = stateAggregates[stName] || stateAggregates[rawName];
                   const val = stData ? (Number(stData[selectedMetric]) || 0) : 0;
                   const isHovered = hoveredStateName === stName || hoveredStateName === rawName;
-                  const isFocused = zoomedState === stName || zoomedState === rawName;
-                  const isDimmed = (hoveredStateName && !isHovered) || (zoomedState && !isFocused);
+                  const isDimmed = Boolean(hoveredStateName && !isHovered);
                   const fillColor = stData ? colorScale(val) : '#f2f2f2';
 
                   const staggerDelay = isEntranceDone ? 0 : idx * (MOTION_TOKENS?.revealStagger || 12);
@@ -598,29 +486,25 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                       key={stName + '-' + idx}
                       d={pathGenerator ? pathGenerator(feat) : ''}
                       fill={fillColor}
-                      stroke={isFocused ? '#0070f3' : isHovered ? '#0070f3' : '#ffffff'}
-                      strokeWidth={isFocused ? 2.5 : isHovered ? 2 : 0.75}
+                      stroke={isHovered ? '#0070f3' : '#ffffff'}
+                      strokeWidth={isHovered ? 2 : 0.75}
                       vectorEffect="non-scaling-stroke"
-                      opacity={isDimmed ? 0.22 : 1}
+                      opacity={isDimmed ? 0.35 : 1}
                       cursor="pointer"
                       role="button"
                       aria-label={`${stName}: ${val} ${selectedMetric}`}
-                      className="transition-colors duration-200 focus:outline-none"
+                      className="focus:outline-none"
                       style={{
                         outline: 'none',
-                        filter: isFocused 
-                          ? 'drop-shadow(0 0 16px rgba(0, 112, 243, 0.6))' 
-                          : isHovered 
-                            ? 'drop-shadow(0 0 10px rgba(0, 112, 243, 0.35))' 
-                            : 'none',
-                        transition: 'opacity 250ms ease, stroke 200ms ease, fill 250ms ease, filter 250ms ease',
+                        filter: isHovered 
+                          ? 'drop-shadow(0 0 10px rgba(0, 112, 243, 0.45))' 
+                          : 'none',
+                        transition: 'opacity 200ms ease, stroke 200ms ease, fill 200ms ease, filter 200ms ease',
                         transitionDelay: `${staggerDelay}ms`
                       }}
                       onMouseEnter={() => {
                         setHoveredStateName(stName);
-                        if (!zoomedState || zoomedState !== stName) {
-                          setIsCardVisible(true);
-                        }
+                        setIsCardVisible(true);
                       }}
                       onMouseLeave={() => {
                         setHoveredStateName(null);
@@ -648,28 +532,25 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                   const pt = projection([ut.lng, ut.lat]);
                   if (!pt) return null;
                   const isHovered = hoveredStateName === ut.name;
-                  const isFocused = zoomedState === ut.name;
-                  const isDimmed = (hoveredStateName && !isHovered) || (zoomedState && !isFocused);
+                  const isDimmed = Boolean(hoveredStateName && !isHovered);
 
                   return (
                     <g key={ut.name} transform={`translate(${pt[0]}, ${pt[1]})`}>
                       <circle
                         r={isHovered ? 6 : 4}
-                        fill={isHovered || isFocused ? '#0070f3' : '#171717'}
+                        fill={isHovered ? '#0070f3' : '#171717'}
                         stroke="#ffffff"
                         strokeWidth={1.5}
                         vectorEffect="non-scaling-stroke"
                         cursor="pointer"
                         role="button"
                         aria-label={`UT ${ut.name}`}
-                        opacity={isDimmed ? 0.3 : 1}
+                        opacity={isDimmed ? 0.35 : 1}
                         className="transition-all duration-200 focus:outline-none"
                         style={{ outline: 'none' }}
                         onMouseEnter={() => {
                           setHoveredStateName(ut.name);
-                          if (!zoomedState || zoomedState !== ut.name) {
-                            setIsCardVisible(true);
-                          }
+                          setIsCardVisible(true);
                         }}
                         onMouseLeave={() => {
                           setHoveredStateName(null);
@@ -701,116 +582,8 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
               </g>
             </svg>
 
-            {/* CINEMATIC AWWWARDS-STYLE STATE DOSSIER REVEAL HUD */}
-            {zoomedState && (
-              <div 
-                className="absolute top-3 left-3 z-30 max-w-xs sm:max-w-sm rounded-[14px] bg-white/95 backdrop-blur-md border border-slate-200 p-4 shadow-[0_12px_36px_rgba(0,0,0,0.16)] transition-all duration-300 animate-in fade-in zoom-in-95"
-              >
-                <div className="flex items-start justify-between border-b border-slate-100 pb-2.5 mb-2.5">
-                  <div>
-                    <div className="flex items-center gap-1.5 mono-eyebrow text-[9px] font-bold text-[#0070f3]">
-                      <Sparkles className="w-3 h-3 text-[#0070f3]" />
-                      <span>CINEMATIC FOCUS // STATE DOSSIER</span>
-                    </div>
-                    <h3 className="text-base font-extrabold text-slate-900 tracking-tight mt-0.5">
-                      {zoomedState}
-                    </h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => zoomToState(null)}
-                    className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                    title="Reset camera to national view"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {(() => {
-                  const zData = stateAggregates[zoomedState] || {};
-                  const totalProj = Number(zData.totalProjects) || 0;
-                  const totalCost = Number(zData.totalCost) || 0;
-                  const delayed = Number(zData.delayed) || 0;
-                  const onTime = zData.onTime !== undefined ? Number(zData.onTime) : Math.max(0, totalProj - delayed);
-                  const highRisk = Number(zData.highRisk) || 0;
-
-                  return (
-                    <div className="space-y-2 text-xs">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                          <span className="text-[10px] text-slate-500 font-medium block">Total Projects</span>
-                          <strong className="text-sm font-bold font-mono text-slate-900">
-                            {totalProj} Projects
-                          </strong>
-                        </div>
-                        <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                          <span className="text-[10px] text-slate-500 font-medium block">Sanctioned Capex</span>
-                          <strong className="text-sm font-bold font-mono text-[#0070f3]">
-                            {formatStateCost(totalCost)}
-                          </strong>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="p-2 rounded-lg bg-emerald-50/70 border border-emerald-100">
-                          <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-800">
-                            <CheckCircle className="w-3 h-3 text-emerald-600" />
-                            <span>On-Time Pacing</span>
-                          </div>
-                          <strong className="text-sm font-bold font-mono text-emerald-800 mt-0.5 block">
-                            {onTime}
-                          </strong>
-                        </div>
-
-                        <div className="p-2 rounded-lg bg-amber-50/70 border border-amber-100">
-                          <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-800">
-                            <Clock className="w-3 h-3 text-amber-600" />
-                            <span>Delayed</span>
-                          </div>
-                          <strong className="text-sm font-bold font-mono text-amber-800 mt-0.5 block">
-                            {delayed}
-                          </strong>
-                        </div>
-                      </div>
-
-                      {highRisk > 0 && (
-                        <div className="px-2.5 py-1.5 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-between text-[11px] text-rose-700 font-mono">
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                            Critical Exposure:
-                          </span>
-                          <strong className="font-bold">{highRisk} Projects</strong>
-                        </div>
-                      )}
-
-                      <div className="pt-1 flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (onSelectState) onSelectState(zoomedState);
-                          }}
-                          className="flex-1 py-2 px-3 rounded-lg bg-[#0070f3] hover:bg-[#0051b3] text-white font-semibold text-xs transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
-                        >
-                          <span>Explore All {totalProj} Projects</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => zoomToState(null)}
-                          className="py-2 px-2.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 font-medium text-xs transition-colors cursor-pointer"
-                          title="Reset camera to national view"
-                        >
-                          Reset
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
-
-            {/* Smooth Floating Info Card (Only shown during non-zoomed hover exploration) */}
-            {hoveredData && (!zoomedState || zoomedState !== hoveredData.stateName) && (
+            {/* Smooth Floating Info Card */}
+            {hoveredData && (
               <div 
                 ref={cardRef}
                 className={`absolute z-30 pointer-events-none rounded-[12px] bg-white border border-[#ebebeb] p-3 shadow-[0_8px_24px_rgba(0,0,0,0.12)] w-68 text-left transition-opacity duration-200 text-[#171717] ${
@@ -829,7 +602,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                     {hoveredData.stateName}
                   </h4>
                   <span className="mono-eyebrow text-[9px] bg-[#0070f3] text-white px-2 py-0.5 rounded-[4px] font-semibold">
-                    CLICK TO ZOOM
+                    CLICK TO VIEW
                   </span>
                 </div>
 
@@ -942,7 +715,6 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
               <div className="space-y-1.5">
                 {displayStates.map((stObj, idx) => {
                   const isHovered = hoveredStateName === stObj.stateName;
-                  const isFocused = zoomedState === stObj.stateName;
                   const maxVal = Math.max(1, Number(rankedStates[0]?.[selectedMetric]) || 1);
                   const currentVal = Number(stObj[selectedMetric]) || 0;
                   const pct = Math.max(6, Math.min(100, Math.round((currentVal / maxVal) * 100)));
@@ -975,7 +747,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                       aria-label={`Inspect ${stObj.stateName}`}
                       onMouseEnter={() => {
                         setHoveredStateName(stObj.stateName);
-                        setIsCardVisible(true);
+                        setIsCardVisible(false);
                       }}
                       onMouseLeave={() => {
                         setHoveredStateName(null);
@@ -983,7 +755,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                       }}
                       onClick={() => handleStateClick(stObj.stateName)}
                       className={`p-2.5 rounded-[10px] border transition-all duration-200 cursor-pointer flex flex-col group ${
-                        isHovered || isFocused
+                        isHovered
                           ? 'bg-blue-50/50 border-[#0070f3] shadow-xs translate-x-1'
                           : 'bg-white border-[#ebebeb] hover:border-[#cbd5e1] hover:bg-[#fafafa]'
                       }`}
@@ -1004,15 +776,10 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                           <div>
                             <div className="flex items-center gap-1.5">
                               <p className={`text-xs font-bold leading-tight transition-colors ${
-                                isHovered || isFocused ? 'text-[#0070f3]' : 'text-[#0f172a]'
+                                isHovered ? 'text-[#0070f3]' : 'text-[#0f172a]'
                               }`}>
                                 {stObj.stateName}
                               </p>
-                              {isFocused && (
-                                <span className="text-[9px] px-1 py-0.2 rounded bg-blue-100 text-blue-700 font-mono font-semibold">
-                                  ZOOMED
-                                </span>
-                              )}
                             </div>
                             <p className="text-[10px] text-[#64748b] font-mono leading-tight mt-0.5">
                               {secondaryDisplay}
@@ -1025,7 +792,7 @@ export default function IndiaMap({ onSelectState, customStateData = null }) {
                             {primaryDisplay}
                           </span>
                           <ArrowRight className={`w-3.5 h-3.5 transition-transform ${
-                            isHovered || isFocused ? 'translate-x-0.5 text-[#0070f3]' : 'text-slate-300 group-hover:text-slate-500'
+                            isHovered ? 'translate-x-0.5 text-[#0070f3]' : 'text-slate-300 group-hover:text-slate-500'
                           }`} />
                         </div>
                       </div>
