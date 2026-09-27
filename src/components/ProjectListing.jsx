@@ -433,8 +433,8 @@ export default function ProjectListing({
                   onClick={() => setStatusFilter(st.id)}
                   className={`px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all cursor-pointer ${
                     statusFilter === st.id
-                      ? 'bg-[#0f172a] text-white shadow-xs font-semibold'
-                      : 'bg-[#f1f5f9] text-[#64748b] hover:text-[#0f172a] hover:bg-[#e2e8f0]'
+                      ? 'bg-slate-950 text-white shadow-xs font-bold'
+                      : 'bg-white text-slate-800 border border-slate-300 hover:text-slate-950 hover:bg-slate-100 font-semibold'
                   }`}
                 >
                   {st.label}
@@ -522,13 +522,14 @@ export default function ProjectListing({
             </div>
 
             {/* View Mode Switcher (6px square Geist app buttons) */}
-            <div className="flex items-center gap-1 p-0.5 rounded-[6px] bg-[#f2f2f2] border border-[#ebebeb] self-start sm:self-auto">
+            {/* View Mode Switcher */}
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-200 border border-slate-300 self-start sm:self-auto shadow-xs">
               <button
                 onClick={() => setViewMode('split')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-xs font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                   viewMode === 'split'
-                    ? 'bg-[#171717] text-white shadow-xs'
-                    : 'text-[#4d4d4d] hover:text-[#171717]'
+                    ? 'bg-slate-950 text-white shadow-xs font-bold'
+                    : 'text-slate-800 hover:text-slate-950 hover:bg-white/60'
                 }`}
               >
                 <Columns className="w-3.5 h-3.5" />
@@ -537,10 +538,10 @@ export default function ProjectListing({
 
               <button
                 onClick={() => setViewMode('grid')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-xs font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                   viewMode === 'grid'
-                    ? 'bg-[#171717] text-white shadow-xs'
-                    : 'text-[#4d4d4d] hover:text-[#171717]'
+                    ? 'bg-slate-950 text-white shadow-xs font-bold'
+                    : 'text-slate-800 hover:text-slate-950 hover:bg-white/60'
                 }`}
               >
                 <Grid className="w-3.5 h-3.5" />
@@ -549,10 +550,10 @@ export default function ProjectListing({
 
               <button
                 onClick={() => setViewMode('table')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-xs font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                   viewMode === 'table'
-                    ? 'bg-[#171717] text-white shadow-xs'
-                    : 'text-[#4d4d4d] hover:text-[#171717]'
+                    ? 'bg-slate-950 text-white shadow-xs font-bold'
+                    : 'text-slate-800 hover:text-slate-950 hover:bg-white/60'
                 }`}
               >
                 <List className="w-3.5 h-3.5" />
