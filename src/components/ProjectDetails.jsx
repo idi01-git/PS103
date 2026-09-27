@@ -67,28 +67,9 @@ export default function ProjectDetails({ projectId, onBack, onOpenReportModal })
     return () => { isMounted = false; };
   }, [projectId, getProjectById]);
 
-  // Ensure view starts at the very top of the Project Dossier
+  // Ensure view starts cleanly at the top of the Project Dossier without jitter
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-
-    const raf = requestAnimationFrame(() => {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    });
-
-    const timer = setTimeout(() => {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    }, 50);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(timer);
-    };
   }, [projectId]);
 
   // Layer 1 EVM Statistical Baseline computation
@@ -258,34 +239,36 @@ export default function ProjectDetails({ projectId, onBack, onOpenReportModal })
         </div>
 
         {/* ==================================================== */}
-        {/* 3. STREAMLINED TAB NAVIGATION BAR                    */}
+        {/* 3. STICKY DOCKED TAB NAVIGATION BAR (PROFESSIONAL UX) */}
         {/* ==================================================== */}
-        <div className="p-1 rounded-xl bg-[#f1f5f9] border border-[#e2e8f0] flex items-center gap-1 overflow-x-auto no-scrollbar">
-          {tabs.map((t) => {
-            const Icon = t.icon;
-            const isActive = activeTab === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs whitespace-nowrap transition-all cursor-pointer ${
-                  isActive 
-                    ? 'bg-white text-[#0f172a] shadow-xs font-semibold' 
-                    : 'text-[#64748b] hover:text-[#0f172a] hover:bg-white/50 font-medium'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#0070f3]' : 'text-[#64748b]'}`} />
-                <span>{t.label}</span>
-                {t.badge && (
-                  <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold ${
-                    isActive ? 'bg-[#eff6ff] text-[#0070f3]' : 'bg-[#e2e8f0] text-[#64748b]'
-                  }`}>
-                    {t.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        <div className="sticky top-14 z-30 bg-[#fafafa]/90 backdrop-blur-md py-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 border-y border-[#ebebeb]/80 transition-all">
+          <div className="max-w-7xl mx-auto p-1 rounded-xl bg-[#f1f5f9] border border-[#e2e8f0] flex items-center gap-1 overflow-x-auto no-scrollbar shadow-xs">
+            {tabs.map((t) => {
+              const Icon = t.icon;
+              const isActive = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id)}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs whitespace-nowrap transition-all cursor-pointer ${
+                    isActive 
+                      ? 'bg-white text-[#0f172a] shadow-xs font-semibold' 
+                      : 'text-[#64748b] hover:text-[#0f172a] hover:bg-white/50 font-medium'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#0070f3]' : 'text-[#64748b]'}`} />
+                  <span>{t.label}</span>
+                  {t.badge && (
+                    <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold ${
+                      isActive ? 'bg-[#eff6ff] text-[#0070f3]' : 'bg-[#e2e8f0] text-[#64748b]'
+                    }`}>
+                      {t.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* ==================================================== */}

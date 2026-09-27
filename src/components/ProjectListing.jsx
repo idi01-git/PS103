@@ -101,12 +101,7 @@ export default function ProjectListing({
     return LOCATIONS_LIST;
   }, [stateAggregates]);
 
-  // Always start ProjectListing from the very top
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-  }, []);
+
 
   useEffect(() => {
     if (sourceProjects.length > 0 && !sourceProjects.find(p => p.id === activeProjectId)) {
@@ -282,9 +277,9 @@ export default function ProjectListing({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         
         {/* ==================================================== */}
-        {/* 1. UNIFIED SEARCH & FILTER CONTROL BAR               */}
+        {/* 1. STICKY UNIFIED SEARCH & FILTER CONTROL BAR        */}
         {/* ==================================================== */}
-        <div className="rounded-[16px] bg-white p-5 sm:p-6 border border-[#ebebeb] shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
+        <div className="sticky top-14 z-20 rounded-[16px] bg-white/95 backdrop-blur-md p-4 sm:p-5 border border-[#ebebeb] shadow-[0_4px_20px_rgba(0,0,0,0.04)] space-y-3.5 transition-all">
           
           {/* Header Row: Title & Mode Toggle & Search */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-[#f1f5f9] pb-4">

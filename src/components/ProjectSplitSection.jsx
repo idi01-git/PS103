@@ -94,13 +94,13 @@ const RightProjectInspector = memo(({ project, onSelectProject }) => {
 
   return (
     <div className="relative w-full h-full">
-      <AnimatePresence mode="popLayout">
+      <AnimatePresence mode="wait">
         <motion.div
           key={project.id}
-          initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
-          transition={{ duration: 0.15, ease: 'easeOut' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.1 }}
           className="rounded-[12px] bg-white p-5 border border-[#ebebeb] shadow-whisper h-full flex flex-col justify-between space-y-4"
         >
           {/* Top Info Sections */}
@@ -305,8 +305,8 @@ export default function ProjectSplitSection({ projects = [], onSelectProject }) 
             )}
           </div>
 
-          {/* Right Column (50% Width) */}
-          <div className="lg:col-span-1 h-full">
+          {/* Right Column (50% Width Sticky Inspector) */}
+          <div className="lg:col-span-1 lg:sticky lg:top-20 self-start">
             <RightProjectInspector
               project={activeProject}
               onSelectProject={onSelectProject}

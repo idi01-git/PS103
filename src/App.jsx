@@ -34,21 +34,9 @@ function AppContent() {
     isLiveConnected 
   } = useProjectData();
 
-  // Instant scroll-to-top helper for all view transitions
+  // Clean instant scroll-to-top helper for all view transitions
   const scrollToTop = () => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-    requestAnimationFrame(() => {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    });
-    setTimeout(() => {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    }, 20);
   };
 
   // Scroll to absolute top whenever active view or tab changes
